@@ -1,0 +1,1 @@
+#define ERROR -666
