@@ -3,7 +3,6 @@
 #include "file.h"
 #include "const.h"
 
-File file;
 
 int File::crunch_file(std::string scroll_loc)
 {

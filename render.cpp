@@ -1,12 +1,13 @@
 #include "render.h"
+#include "file.h"
 #include <ncurses.h>
 
 Render render;
 
-int Render::run(Args my_args)
+int Render::run(Args my_args, File my_scroll)
 {
 	initscr();
-	noecho(); // Turn of printing of pressed character
+	noecho(); // Turn off printing of pressed character
 	int ch;
 	while (1)
 	{

@@ -21,4 +21,4 @@ class Args
 	public:
 		void process(int argc, char* argv[]);
 		std::string get_file() { return file; }
-} extern args;
+};

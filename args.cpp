@@ -3,8 +3,6 @@
 #include "util.h"
 #include "const.h"
 
-Args args;
-
 void Args::process(int argc, char* argv[])
 {
 	for (int i = 1; i<argc; i++)

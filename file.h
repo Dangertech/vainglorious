@@ -11,5 +11,3 @@ class File
 		std::vector<std::vector<std::string>> get_blocks() { return blocks; }
 		//TODO: std::string rblock(); // Get a random block from the list
 };
-
-extern File file;
