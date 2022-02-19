@@ -1,5 +1,9 @@
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
+#include <string>
 #include "file.h"
 #include "const.h"
 
@@ -29,4 +33,12 @@ int File::crunch_file(std::string scroll_loc)
 		blocks.push_back(cur_block);
 	scroll.close();
 	return 0;
+}
+
+std::vector<std::string> File::rblock()
+{
+	srand(time(0) + roff);
+	int cho = rand()%blocks.size();
+	roff++;
+	return blocks[cho];
 }

@@ -19,7 +19,10 @@ int main(int argc, char* argv[])
 	std::cout << "Done!" << std::endl;
 	std::cout << "Total blocks found: " << scroll.get_blocks().size() << std::endl;
 	std::cout << scroll.get_blocks()[0][0] << std::endl; // Print the first line of the first block
-	
+	 
+	// Check if dry run was specified
+	if (args.get_dry())
+		return 5;
 	std::cout << "Initializing Display..." << std::endl;
 	// initscr() starts here
 	render.run(args, scroll);

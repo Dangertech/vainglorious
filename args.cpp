@@ -13,6 +13,9 @@ void Args::process(int argc, char* argv[])
 			case 0:
 				process_file(i, argc, argv);
 				break;
+			case 7:
+				dry = true;
+				break;
 			default:
 				std::cout << "Invalid argument!" << std::endl;
 				break;
