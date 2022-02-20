@@ -3,7 +3,32 @@
 #include "render.h"
 #include "file.h"
 
-Render render;
+void Render::move_up()
+{
+	grid.erase(grid.begin());
+}
+
+void Render::add_line(std::string line)
+{
+	grid.push_back(std::vector<char>());
+	for (int i = 0; i<line.size(); i++)
+	{
+		grid[grid.size()-1].push_back(line[i]);
+	}
+}
+
+void Render::render_grid()
+{
+	move(0, 0);
+	for (int i = 0; i<grid.size(); i++)
+	{
+		for (int j = 0; j<grid[i].size(); j++)
+		{
+			printw("%c", grid[i][j]);
+		}
+		printw("\n");
+	}
+}
 
 int Render::run(Args my_args, File my_scroll)
 {
@@ -27,8 +52,11 @@ int Render::run(Args my_args, File my_scroll)
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		printw("%s\n", myblock[blockpos].c_str());
+		add_line(myblock[blockpos].c_str());
+		render_grid();
 		blockpos++;
+		if (grid.size() > getmaxy(stdscr)-8)
+			move_up();
 	}
 	endwin();
 	return 0;
