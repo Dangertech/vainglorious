@@ -55,7 +55,11 @@ int Render::run(Args my_args, File my_scroll)
 		add_line(myblock[blockpos].c_str());
 		render_grid();
 		blockpos++;
-		if (grid.size() > getmaxy(stdscr)-8)
+		// Start moving up when the text has advanced far enough
+		int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+		if (scrlimit < 0)
+			scrlimit = 0;
+		if (grid.size() > scrlimit)
 			move_up();
 	}
 	endwin();

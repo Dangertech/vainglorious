@@ -16,13 +16,19 @@ int main(int argc, char* argv[])
 	 
 	std::cout << "Crunching through Scroll file..." << std::endl;
 	if (scroll.crunch_file(args.get_file()) == ERROR)
+	{
 		std::cout << "Error opening scroll! Please check file ownership!" << std::endl;
+		return 1;
+	}
 	std::cout << "Done!" << std::endl;
 	std::cout << "Total blocks found: " << scroll.get_blocks().size() << std::endl;
 	 
 	// Check if dry run was specified
 	if (args.get_dry())
+	{
+		std::cout << "Dry run, exiting!" << std::endl;
 		return 5;
+	}
 	 
 	std::cout << "Initializing Display..." << std::endl;
 	// initscr() starts here
