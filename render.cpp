@@ -34,9 +34,16 @@ int Render::run(Args my_args, File my_scroll)
 {
 	initscr();
 	noecho(); // Turn off printing of pressed character
+	start_color(); // Use Colors
 	int ch;
 	std::vector<std::string> myblock;
 	int blockpos = 0;
+
+	// Init colors
+	init_pair(1, my_args.get_fg(), my_args.get_bg());
+	 
+	wbkgd(stdscr, COLOR_PAIR(1));
+	attron(COLOR_PAIR(1));
 	while (1)
 	{
 		/* If everything in the block has been used,
@@ -62,6 +69,7 @@ int Render::run(Args my_args, File my_scroll)
 		if (grid.size() > scrlimit)
 			move_up();
 	}
+	attroff(COLOR_PAIR(1));
 	endwin();
 	return 0;
 }
