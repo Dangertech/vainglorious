@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include <string>
 #include "const.h"
 
@@ -15,5 +16,20 @@ class Util
 					return i;
 			}
 			return ERROR;
+		}
+		/* I know, this makes an unordered_map a lil 
+		 * stupid but the performance hit is minimal
+		 * and I don't care enough to reengineer with
+		 * an std::pair or something
+		 */
+		template <typename A, typename T>
+		A valtokey(std::unordered_map<A, T> map, T val)
+		{
+			for (auto i = map.begin(); i != map.end(); i++)
+			{
+				if (i->second == val)
+					return i->first;
+			}
+			return nullptr;
 		}
 } extern util;

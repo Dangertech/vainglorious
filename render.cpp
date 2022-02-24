@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include "render.h"
 #include "file.h"
+#include "util.h"
 
 void Render::move_up()
 {
@@ -19,31 +20,54 @@ void Render::add_line(std::string line)
 
 void Render::render_grid()
 {
+	/* This is used to move the
+	 * cursor to the position before the
+	 * last newline character so that it really
+	 * looks like the cursor typed the lines/characters
+	 */
+	int lastxpos = 0;
+	 
 	move(0, 0);
 	for (int i = 0; i<grid.size(); i++)
 	{
 		for (int j = 0; j<grid[i].size(); j++)
 		{
 			printw("%c", grid[i][j]);
+			lastxpos = getcurx(stdscr);
 		}
 		printw("\n");
 	}
+	// Prepare y pos for cursor
+	int lastypos = getcury(stdscr);
+	if (lastypos != getmaxy(stdscr)-1)
+		lastypos--;
+	move(lastypos, lastxpos); // move cursor
 }
 
 int Render::run(Args my_args, File my_scroll)
 {
+	/* Set cursor color
+	 * This has to be done before initscr() is called
+	 */
+	std::string ccolname = my_args.colid_to_string(my_args.get_cur());
+	printf("\e]12;%s\a", ccolname.c_str());
+	 
 	initscr();
 	noecho(); // Turn off printing of pressed character
 	start_color(); // Use Colors
+	// Disable cursor in case of -c
+	if (my_args.get_show_cursor())
+		curs_set(0);
+	 
+	// Init colors
+	init_pair(1, my_args.get_fg(), my_args.get_bg());
+	wbkgd(stdscr, COLOR_PAIR(1)); // Set background
+	attron(COLOR_PAIR(1));
+	 
 	int ch;
 	std::vector<std::string> myblock;
 	int blockpos = 0;
-
-	// Init colors
-	init_pair(1, my_args.get_fg(), my_args.get_bg());
 	 
-	wbkgd(stdscr, COLOR_PAIR(1));
-	attron(COLOR_PAIR(1));
 	while (1)
 	{
 		/* If everything in the block has been used,

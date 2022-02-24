@@ -12,18 +12,37 @@ void Args::process(int argc, char* argv[])
 		switch (match)
 		{
 			case 0: case 1:
-				process_file(i, argc, argv);
+				if (process_file(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("file");
+					exit(1);
+				}
 				break;
 			case 4: case 5:
-				process_limit(i, argc, argv);
+				if (process_limit(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("limit");
+					exit(1);
+				}
 				break;
 			case 6: case 7:
-				process_color(i, argc, argv, false);
+				if (process_color(i, argc, argv, false) == ERROR)
+				{
+					std::cout << err_msgs.at("color");
+					exit(1);
+				}
 				break;
 			case 8: case 9:
-				process_color(i, argc, argv, true);
+				if (process_color(i, argc, argv, true) == ERROR)
+				{
+					std::cout << err_msgs.at("color");
+					exit(1);
+				}
 				break;
-			case 11:
+			case 10: case 11:
+				show_cursor = true;
+				break;
+			case 13:
 				dry = true;
 				break;
 			default:
@@ -33,7 +52,7 @@ void Args::process(int argc, char* argv[])
 	}
 }
 
-void Args::process_file(int &i, int argc, char* argv[])
+int Args::process_file(int &i, int argc, char* argv[])
 {
 	if (i < argc-1)
 	{
@@ -41,14 +60,11 @@ void Args::process_file(int &i, int argc, char* argv[])
 		file = argv[i];
 	}
 	else
-	{
-		std::cout << "Usage of -f/--file:" << std::endl
-				  << "\tSpecify a scroll file to read from: vain --file scrollfile.txt\n";
-		exit(1);
-	}
+		return ERROR;
+	return 0;
 }
 
-void Args::process_limit(int &i, int argc, char* argv[])
+int Args::process_limit(int &i, int argc, char* argv[])
 {
 	if (i < argc-1)
 	{
@@ -59,17 +75,16 @@ void Args::process_limit(int &i, int argc, char* argv[])
 			limit = atoi(argv[i]);
 	}
 	else
-	{
-		std::cout << "Usage of -l/--limit:" << std::endl
-				  << "\tSpecify until where the text should go before starting to scroll up" << std::endl
-				  << "\tExample: 'vain --limit 3' scrolls up to 3 lines before the terminal ends" << std::endl;
-		exit(1);
-	}
+		return ERROR;
+	return 0;
 }
 
-void Args::process_color(int &i, int argc, char* argv[], bool bg)
+int Args::process_color(int &i, int argc, char* argv[], bool bg)
 {
 	i++;
+	if (i > argc-1)
+		return ERROR;
+	 
 	std::string prop_col = std::string(argv[i]);
 	if (colnames.find(prop_col) != colnames.end())
 	{
@@ -78,4 +93,25 @@ void Args::process_color(int &i, int argc, char* argv[], bool bg)
 		else
 			bg_color = colnames.at(prop_col);
 	}
+	else
+		return ERROR;
+	return 0;
+}
+
+std::string Args::colid_to_string(int colid)
+{
+	Util util;
+	std::string string = util.valtokey<std::string, int>(colnames, colid);
+	if (!string.empty())
+		return string;
+	else
+		return "white";
+}
+
+int Args::get_cur()
+{
+	if (cur_color == -1)
+		return fg_color;
+	else
+		return cur_color;
 }
