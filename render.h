@@ -13,6 +13,8 @@ class Render
 		void move_up();
 		void add_line(std::string line);
 		void render_grid();
+
+		void cleardraw();
 	public:
 		int run(Args, File);
 };

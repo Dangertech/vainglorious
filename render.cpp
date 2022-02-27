@@ -44,6 +44,18 @@ void Render::render_grid()
 	move(lastypos, lastxpos); // move cursor
 }
 
+void Render::cleardraw()
+{
+	for (int y = 0; y<getmaxy(stdscr); y++)
+	{
+		move(y, 0);
+		for (int x = 0; x<getmaxx(stdscr); x++)
+		{
+			printw(" ");
+		}
+	}
+}
+
 int Render::run(Args my_args, File my_scroll)
 {
 	/* Set cursor color
@@ -61,8 +73,13 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	// Init colors
 	init_pair(1, my_args.get_fg(), my_args.get_bg());
-	wbkgd(stdscr, COLOR_PAIR(1)); // Set background
+	bkgd(COLOR_PAIR(1));
 	attron(COLOR_PAIR(1));
+	/* Draw everything once to set the background everywhere
+	 * bkgd() or wbkgd() alone leaves a column black at the right 
+	 * side of my terminal for some reason
+	 */
+	cleardraw();
 	 
 	int ch;
 	std::vector<std::string> myblock;
