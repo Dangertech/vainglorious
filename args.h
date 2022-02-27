@@ -23,6 +23,8 @@ class Args
 			"--foreground",
 			"-B",
 			"--background",
+			"-C",
+			"--cursor",
 			"-c",
 			"--no-show-cursor",
 			"--debug",
@@ -57,8 +59,8 @@ class Args
 				+ "\t\tDefault: " + int_st(limit) + "\n"
 			},
 			{"color",
-				s("Usage of -F/--foreground and -B/--background:\n")
-				+ "\tChange the foreground or background color with one of eight predefined color names\n"
+				s("Usage of -F/--foreground, -B/--background and -C/--cursor:\n")
+				+ "\tChange the foreground, background or cursor color with one of eight predefined color names\n"
 				+ "\t\tExample: '" + C_GREEN_U + "vain -F red -B white" + C_OFF + "'\n"
 				+ "\t\tAll accepted color names:\n"
 				+ "\t\t\tblack\n"
@@ -69,14 +71,14 @@ class Args
 				+ "\t\t\tmagenta\n"
 				+ "\t\t\tcyan\n"
 				+ "\t\t\twhite\n"
-				+ "\t\tDefault: green foreground, black background\n"
+				+ "\t\tDefault: green foreground, black background, cursor adapts to foreground color\n"
 			}
 			
 		};
 		 
 		// Color settings
 		int fg_color = COLOR_GREEN, bg_color = COLOR_BLACK; 		 
-		bool show_cursor = false;
+		bool show_cursor = true;
 		/* Cursor Color
 		 * -1 gets handled by get_cur() as fg_color,
 		 *  so that it's just the foreground color unless
@@ -86,7 +88,10 @@ class Args
 		 
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);
-		int process_color(int &i, int argc, char * argv[], bool bg);
+		 
+		enum ColorSetters { FG, BG, CUR };
+		int process_color(int &i, int argc, char * argv[], ColorSetters type);
+		 
 	public:
 		void process(int argc, char* argv[]);
 		std::string get_file() { return file; }

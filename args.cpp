@@ -26,23 +26,30 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 6: case 7:
-				if (process_color(i, argc, argv, false) == ERROR)
+				if (process_color(i, argc, argv, FG) == ERROR)
 				{
 					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 8: case 9:
-				if (process_color(i, argc, argv, true) == ERROR)
+				if (process_color(i, argc, argv, BG) == ERROR)
 				{
 					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 10: case 11:
-				show_cursor = true;
+				if (process_color(i, argc, argv, CUR) == ERROR)
+				{
+					std::cout << err_msgs.at("color");
+					exit(1);
+				}
 				break;
-			case 13:
+			case 12: case 13:
+				show_cursor = false;
+				break;
+			case 14:
 				dry = true;
 				break;
 			default:
@@ -79,7 +86,7 @@ int Args::process_limit(int &i, int argc, char* argv[])
 	return 0;
 }
 
-int Args::process_color(int &i, int argc, char* argv[], bool bg)
+int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 {
 	i++;
 	if (i > argc-1)
@@ -88,10 +95,12 @@ int Args::process_color(int &i, int argc, char* argv[], bool bg)
 	std::string prop_col = std::string(argv[i]);
 	if (colnames.find(prop_col) != colnames.end())
 	{
-		if (!bg)
+		if (type == FG)
 			fg_color = colnames.at(prop_col);
-		else
+		else if (type == BG)
 			bg_color = colnames.at(prop_col);
+		else if (type == CUR)
+			cur_color = colnames.at(prop_col);
 	}
 	else
 		return ERROR;

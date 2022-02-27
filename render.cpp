@@ -68,7 +68,7 @@ int Render::run(Args my_args, File my_scroll)
 	noecho(); // Turn off printing of pressed character
 	start_color(); // Use Colors
 	// Disable cursor in case of -c
-	if (my_args.get_show_cursor())
+	if (!my_args.get_show_cursor())
 		curs_set(0);
 	 
 	// Init colors
@@ -112,5 +112,6 @@ int Render::run(Args my_args, File my_scroll)
 	}
 	attroff(COLOR_PAIR(1));
 	endwin();
+	printf("\e]12;white\a");
 	return 0;
 }
