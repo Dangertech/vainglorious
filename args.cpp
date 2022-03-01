@@ -49,7 +49,7 @@ void Args::process(int argc, char* argv[])
 			case 12: case 13:
 				show_cursor = false;
 				break;
-			case 14:
+			case 15:
 				dry = true;
 				break;
 			default:
@@ -93,6 +93,7 @@ int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 		return ERROR;
 	 
 	std::string prop_col = std::string(argv[i]);
+	/*
 	if (colnames.find(prop_col) != colnames.end())
 	{
 		if (type == FG)
@@ -102,17 +103,18 @@ int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 		else if (type == CUR)
 			cur_color = colnames.at(prop_col);
 	}
-	else
-		return ERROR;
-	return 0;
+	*/
+	Util util;
+	int namematch = util.veccmp<std::string>(prop_col, themenames);
+	if (namematch != ERROR)
+		fg_color = namematch;
+	return ERROR;
 }
 
 std::string Args::colid_to_string(int colid)
 {
-	Util util;
-	std::string string = util.valtokey<std::string, int>(colnames, colid);
-	if (!string.empty())
-		return string;
+	if (colid < themenames.size() && colid >= 0)
+		return themenames[colid];
 	else
 		return "white";
 }

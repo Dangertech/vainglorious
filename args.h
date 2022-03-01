@@ -31,17 +31,7 @@ class Args
 			"--dry",
 			"--help"
 		};
-		std::unordered_map<std::string, int> colnames =
-		{
-			{"black",COLOR_BLACK},
-			{"red", COLOR_RED},
-			{"green", COLOR_GREEN},
-			{"yellow", COLOR_YELLOW},
-			{"blue", COLOR_BLUE},
-			{"magenta", COLOR_MAGENTA},
-			{"cyan", COLOR_CYAN},
-			{"white", COLOR_WHITE}
-		};
+		 
 		#define s(X) std::string(X)
 		#define int_st(X) std::to_string(X)
 		std::unordered_map<std::string, std::string> err_msgs =
@@ -76,8 +66,31 @@ class Args
 			
 		};
 		 
+
 		// Color settings
-		int fg_color = COLOR_GREEN, bg_color = COLOR_BLACK; 		 
+		int fg_color = COLOR_GREEN, bg_color = COLOR_BLACK;
+		bool multicol = true;
+		/* The input and display name for the default
+		 * themes
+		 * The sort order implies the id of each theme
+		 * (e.g. the green theme has the id 0)
+		 */
+		std::vector<std::string> themenames =
+		{
+			"green"
+		};
+		/* The default colors for the predefined themes
+		 * The second layer is sorted by the theme ids
+		 */
+		std::vector<std::vector<std::vector<int>>> themecols =
+		{
+			// GREEN example
+			{
+				{234, 71, 141, 83},
+				{22, 149, 243, 161},
+				{28, 188, 596, 318}
+			}
+		};
 		bool show_cursor = true;
 		/* Cursor Color
 		 * -1 gets handled by get_cur() as fg_color,
@@ -94,6 +107,7 @@ class Args
 		 
 	public:
 		void process(int argc, char* argv[]);
+		 
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
 		int get_fg() { return fg_color; }

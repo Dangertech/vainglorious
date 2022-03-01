@@ -1,5 +1,6 @@
 #include <string>
 #include <ncurses.h>
+#include <random>
 #include "render.h"
 #include "file.h"
 #include "util.h"
@@ -9,12 +10,75 @@ void Render::move_up()
 	grid.erase(grid.begin());
 }
 
-void Render::add_line(std::string line)
+void Render::add_char(char c, int col_id)
 {
-	grid.push_back(std::vector<char>());
+	if (grid.size() == 0)
+		grid.push_back(std::vector<Cell>()); // Failsafe
+	 
+	if (c != '\n')
+		grid[grid.size()-1].push_back(Cell(c, col_id));
+	else
+	{
+		grid.push_back(std::vector<Cell>());
+	}
+	/* Actually, through this, there is
+	 * ALWAYS AN EMPTY NEW LINE at the end of the
+	 * text when a newline is cast from add_line(), for example
+	 */
+}
+
+int Render::random_pair(std::vector<PairProb> pair_data)
+{
+	// Basically our seed without using the time
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	// Get weights
+	  
+	// Get until where to size vector
+	int highest_pair = 0;
+	for (int i = 0; i<pair_data.size(); i++)
+	{
+		if (pair_data[i].pair_id > highest_pair)
+			highest_pair = pair_data[i].pair_id;
+	}
+	std::vector<int> weights(highest_pair+1); // +1 because 0 is no color pair
+	// Fill weights with defined weights from pair_data
+	for (int i = 0; i<pair_data.size(); i++)
+	{
+		weights[pair_data[i].pair_id] = pair_data[i].prob;
+	}
+
+	std::discrete_distribution<> dist(weights.begin(), weights.end());
+	 
+	/* Returns numbers between weights.begin() and weights.end() according to their content */
+	return dist(gen); 
+}
+
+void Render::add_line(std::string line, std::vector<PairProb> pair_data)
+{
+	/* To circumvent multiple difficulties with
+	 * the new line problem, this function just doesn't
+	 * finish a line at the end but instead finishes it at
+	 * the beginning of it's cast
+	 */
+	if (grid.size() > 0) // Failsafe
+		if (grid[grid.size()-1].size() > 0)
+			add_char('\n', 1);
 	for (int i = 0; i<line.size(); i++)
 	{
-		grid[grid.size()-1].push_back(line[i]);
+		int colpair;
+		if (pair_data.size() > 1)
+		{
+			// Generate colpair from pair_data
+			colpair = random_pair(pair_data);
+		}
+		else if (pair_data.size() == 1)
+			colpair = pair_data[0].pair_id; // Just save the resources
+		else
+			colpair = 1;
+		 
+		add_char(line[i], colpair);
 	}
 }
 
@@ -32,15 +96,17 @@ void Render::render_grid()
 	{
 		for (int j = 0; j<grid[i].size(); j++)
 		{
-			printw("%c", grid[i][j]);
+			if (getcurx(stdscr) > getmaxx(stdscr)-2)
+				break; // Stop rendering
+			attron(COLOR_PAIR(grid[i][j].col_id));
+			printw("%c", grid[i][j].c);
+			attroff(COLOR_PAIR(grid[i][j].col_id));
 			lastxpos = getcurx(stdscr);
 		}
 		printw("\n");
 	}
 	// Prepare y pos for cursor
-	int lastypos = getcury(stdscr);
-	if (lastypos != getmaxy(stdscr)-1)
-		lastypos--;
+	int lastypos = grid.size()-1;
 	move(lastypos, lastxpos); // move cursor
 }
 
@@ -73,8 +139,8 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	// Init colors
 	init_pair(1, my_args.get_fg(), my_args.get_bg());
+	init_pair(2, COLOR_YELLOW, my_args.get_bg());
 	bkgd(COLOR_PAIR(1));
-	attron(COLOR_PAIR(1));
 	/* Draw everything once to set the background everywhere
 	 * bkgd() or wbkgd() alone leaves a column black at the right 
 	 * side of my terminal for some reason
@@ -100,7 +166,7 @@ int Render::run(Args my_args, File my_scroll)
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		add_line(myblock[blockpos].c_str());
+		add_line(myblock[blockpos].c_str(), {PairProb(1, {1,1}, 90), {PairProb(2, {1,1}, 10)}});
 		render_grid();
 		blockpos++;
 		// Start moving up when the text has advanced far enough
@@ -110,7 +176,6 @@ int Render::run(Args my_args, File my_scroll)
 		if (grid.size() > scrlimit)
 			move_up();
 	}
-	attroff(COLOR_PAIR(1));
 	endwin();
 	printf("\e]12;white\a");
 	return 0;
