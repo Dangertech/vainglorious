@@ -59,6 +59,16 @@ void Args::process(int argc, char* argv[])
 	}
 }
 
+void Args::makepairs(int my_theme_id)
+{
+	for (int cols = 0; cols<themecols[my_theme_id].size(); cols++)
+	{
+		Color my_color = themecols[themeid][cols];
+		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
+		init_pair(my_color.pair_prob.pair_id, my_color.id, COLOR_BLACK);
+	}
+}
+
 int Args::process_file(int &i, int argc, char* argv[])
 {
 	if (i < argc-1)
@@ -93,24 +103,18 @@ int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 		return ERROR;
 	 
 	std::string prop_col = std::string(argv[i]);
-	/*
-	if (colnames.find(prop_col) != colnames.end())
-	{
-		if (type == FG)
-			fg_color = colnames.at(prop_col);
-		else if (type == BG)
-			bg_color = colnames.at(prop_col);
-		else if (type == CUR)
-			cur_color = colnames.at(prop_col);
-	}
-	*/
 	Util util;
 	int namematch = util.veccmp<std::string>(prop_col, themenames);
 	if (namematch != ERROR)
-		fg_color = namematch;
+	{
+		themeid = namematch;
+		return 0;
+	}
 	return ERROR;
 }
 
+// TODO: Theme names could get names that aren't valid ANSI
+// cursor escape code names; 
 std::string Args::colid_to_string(int colid)
 {
 	if (colid < themenames.size() && colid >= 0)
@@ -122,7 +126,7 @@ std::string Args::colid_to_string(int colid)
 int Args::get_cur()
 {
 	if (cur_color == -1)
-		return fg_color;
+		return themeid;
 	else
 		return cur_color;
 }

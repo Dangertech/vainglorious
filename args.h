@@ -5,6 +5,20 @@
 #include <ncurses.h>
 #include "const.h"
 
+struct PairProb
+{
+	int pair_id; // The color pair id
+	std::pair<int, int> app_length; // For how long it appears
+	int prob; // Probability to start appearing
+};
+
+struct Color
+{
+	int id;
+	int R, G, B;
+	PairProb pair_prob;
+};
+
 class Args
 {
 	private:
@@ -68,27 +82,34 @@ class Args
 		 
 
 		// Color settings
-		int fg_color = COLOR_GREEN, bg_color = COLOR_BLACK;
-		bool multicol = true;
+		int themeid = 0;
+		bool multicol = true; // If this is false, only color 0 from a theme will be used
 		/* The input and display name for the default
 		 * themes
-		 * The sort order implies the id of each theme
+		 * T^he sort order implies the id of each theme
 		 * (e.g. the green theme has the id 0)
 		 */
 		std::vector<std::string> themenames =
 		{
 			"green"
 		};
+
+
 		/* The default colors for the predefined themes
 		 * The second layer is sorted by the theme ids
 		 */
-		std::vector<std::vector<std::vector<int>>> themecols =
+		std::vector<std::vector<Color>> themecols =
 		{
 			// GREEN example
 			{
-				{234, 71, 141, 83},
-				{22, 149, 243, 161},
-				{28, 188, 596, 318}
+				// COLORID, R,   G,   B,ColPair,length,probability
+				{234,       71,  141, 83,  {1, {1,1}, 10} },
+				{22,        149, 243, 161, {2, {1,1}, 20} },
+				{28,        188, 596, 318, {3, {1,1}, 30} },
+				{35,        188, 714, 397, {4, {1,1}, 40} },
+				{78,        227, 925, 561, {5, {1,1}, 50} },
+				{84,        271, 973, 667, {6, {1,1}, 60} },
+				{159,       667, 1000, 941,{7, {1,1}, 70} }
 			}
 		};
 		bool show_cursor = true;
@@ -107,13 +128,16 @@ class Args
 		 
 	public:
 		void process(int argc, char* argv[]);
+		void makepairs(int themeid);
 		 
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
-		int get_fg() { return fg_color; }
-		int get_bg() { return bg_color; }
+		//int get_fg() { return fg_color; }
+		//int get_bg() { return bg_color; }
 		bool get_show_cursor() { return show_cursor; }
 		int get_cur(); // Because of more complexity located in args.cpp
+		int get_themeid() { return themeid; }
+		std::vector<Color> get_theme_cols(int theme_id) { return themecols[themeid];}
 		std::string colid_to_string(int colid);
 		bool get_dry() { return dry; }
 };

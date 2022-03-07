@@ -27,7 +27,7 @@ void Render::add_char(char c, int col_id)
 	 */
 }
 
-int Render::random_pair(std::vector<PairProb> pair_data)
+int Render::random_pair(std::vector<Color> col_data)
 {
 	// Basically our seed without using the time
 	std::random_device rd;
@@ -37,16 +37,16 @@ int Render::random_pair(std::vector<PairProb> pair_data)
 	  
 	// Get until where to size vector
 	int highest_pair = 0;
-	for (int i = 0; i<pair_data.size(); i++)
+	for (int i = 0; i<col_data.size(); i++)
 	{
-		if (pair_data[i].pair_id > highest_pair)
-			highest_pair = pair_data[i].pair_id;
+		if (col_data[i].pair_prob.pair_id > highest_pair)
+			highest_pair = col_data[i].pair_prob.pair_id;
 	}
 	std::vector<int> weights(highest_pair+1); // +1 because 0 is no color pair
 	// Fill weights with defined weights from pair_data
-	for (int i = 0; i<pair_data.size(); i++)
+	for (int i = 0; i<col_data.size(); i++)
 	{
-		weights[pair_data[i].pair_id] = pair_data[i].prob;
+		weights[col_data[i].pair_prob.pair_id] = col_data[i].pair_prob.prob;
 	}
 
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
@@ -55,7 +55,7 @@ int Render::random_pair(std::vector<PairProb> pair_data)
 	return dist(gen); 
 }
 
-void Render::add_line(std::string line, std::vector<PairProb> pair_data)
+void Render::add_line(std::string line, std::vector<Color> col_data)
 {
 	/* To circumvent multiple difficulties with
 	 * the new line problem, this function just doesn't
@@ -68,13 +68,13 @@ void Render::add_line(std::string line, std::vector<PairProb> pair_data)
 	for (int i = 0; i<line.size(); i++)
 	{
 		int colpair;
-		if (pair_data.size() > 1)
+		if (col_data.size() > 1)
 		{
 			// Generate colpair from pair_data
-			colpair = random_pair(pair_data);
+			colpair = random_pair(col_data);
 		}
-		else if (pair_data.size() == 1)
-			colpair = pair_data[0].pair_id; // Just save the resources
+		else if (col_data.size() == 1)
+			colpair = col_data[0].pair_prob.pair_id; // Just save the resources
 		else
 			colpair = 1;
 		 
@@ -138,9 +138,8 @@ int Render::run(Args my_args, File my_scroll)
 		curs_set(0);
 	 
 	// Init colors
-	init_pair(1, my_args.get_fg(), my_args.get_bg());
-	init_pair(2, COLOR_YELLOW, my_args.get_bg());
-	bkgd(COLOR_PAIR(1));
+	my_args.makepairs(my_args.get_themeid());
+	bkgd(COLOR_PAIR(1)); // Background is bg of default colorpair
 	/* Draw everything once to set the background everywhere
 	 * bkgd() or wbkgd() alone leaves a column black at the right 
 	 * side of my terminal for some reason
@@ -166,7 +165,7 @@ int Render::run(Args my_args, File my_scroll)
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		add_line(myblock[blockpos].c_str(), {PairProb(1, {1,1}, 90), {PairProb(2, {1,1}, 10)}});
+		add_line(myblock[blockpos].c_str(), my_args.get_theme_cols(0));
 		render_grid();
 		blockpos++;
 		// Start moving up when the text has advanced far enough
