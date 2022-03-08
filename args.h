@@ -33,8 +33,8 @@ class Args
 			"--scroll-mode",
 			"-l",
 			"--limit",
-			"-F",
-			"--foreground",
+			"-T",
+			"--theme",
 			"-B",
 			"--background",
 			"-C",
@@ -83,6 +83,11 @@ class Args
 
 		// Color settings
 		int themeid = 0;
+		/* The background color is
+		 * completely independent from
+		 * the set theme; It is used by args::makepairs()
+		 * to set the correct background color for every pair */
+		int bg_col = COLOR_BLACK;
 		bool multicol = true; // If this is false, only color 0 from a theme will be used
 		/* The input and display name for the default
 		 * themes
@@ -92,6 +97,22 @@ class Args
 		std::vector<std::string> themenames =
 		{
 			"green"
+		};
+
+		/* General accepted names of colors,
+		 * used for setting the background color,
+		 * for example
+		 */
+		std::vector<std::string> colnames =
+		{
+			"black",
+			"red",
+			"green",
+			"yellow",
+			"blue",
+			"magenta",
+			"cyan",
+			"white"
 		};
 
 
@@ -112,32 +133,31 @@ class Args
 				{159,       667, 1000, 941,{7, {1,1}, 70} }
 			}
 		};
+		std::vector<std::vector<unsigned char>> curcols =
+		{
+			// GREEN
+			{0, 255, 0}
+		};
 		bool show_cursor = true;
-		/* Cursor Color
-		 * -1 gets handled by get_cur() as fg_color,
-		 *  so that it's just the foreground color unless
-		 *  the user specifies something else
-		 */
-		int cur_color = -1;
 		 
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);
 		 
-		enum ColorSetters { FG, BG, CUR };
-		int process_color(int &i, int argc, char * argv[], ColorSetters type);
+		int process_theme(int &i, int argc, char * argv[]);
+		int process_background(int &i, int argc, char * argv[]);
+		int process_cursor(int &i, int argc, char * argv[]);
 		 
 	public:
 		void process(int argc, char* argv[]);
 		void makepairs(int themeid);
+		std::string colid_to_string(int colid);
 		 
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
-		//int get_fg() { return fg_color; }
-		//int get_bg() { return bg_color; }
-		bool get_show_cursor() { return show_cursor; }
-		int get_cur(); // Because of more complexity located in args.cpp
+		bool get_dry() { return dry; }
+		 
 		int get_themeid() { return themeid; }
 		std::vector<Color> get_theme_cols(int theme_id) { return themecols[themeid];}
-		std::string colid_to_string(int colid);
-		bool get_dry() { return dry; }
+		bool get_show_cursor() { return show_cursor; }
+		std::vector<unsigned char> get_curtheme(int theme_id) { return curcols[themeid]; }
 };

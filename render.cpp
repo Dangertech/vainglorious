@@ -27,6 +27,11 @@ void Render::add_char(char c, int col_id)
 	 */
 }
 
+void Render::change_cur_color(std::vector<unsigned char> rgb)
+{
+	printf("\e]12;#%.2x%.2x%.2x\a", rgb[0], rgb[1], rgb[2]);
+}
+
 int Render::random_pair(std::vector<Color> col_data)
 {
 	// Basically our seed without using the time
@@ -127,8 +132,7 @@ int Render::run(Args my_args, File my_scroll)
 	/* Set cursor color
 	 * This has to be done before initscr() is called
 	 */
-	std::string ccolname = my_args.colid_to_string(my_args.get_cur());
-	printf("\e]12;%s\a", ccolname.c_str());
+	change_cur_color(my_args.get_curtheme(my_args.get_themeid()));
 	 
 	initscr();
 	noecho(); // Turn off printing of pressed character

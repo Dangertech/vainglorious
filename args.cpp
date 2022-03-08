@@ -26,21 +26,21 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 6: case 7:
-				if (process_color(i, argc, argv, FG) == ERROR)
+				if (process_theme(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 8: case 9:
-				if (process_color(i, argc, argv, BG) == ERROR)
+				if (process_background(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 10: case 11:
-				if (process_color(i, argc, argv, CUR) == ERROR)
+				if (process_cursor(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("color");
 					exit(1);
@@ -65,7 +65,7 @@ void Args::makepairs(int my_theme_id)
 	{
 		Color my_color = themecols[themeid][cols];
 		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
-		init_pair(my_color.pair_prob.pair_id, my_color.id, COLOR_BLACK);
+		init_pair(my_color.pair_prob.pair_id, my_color.id, bg_col);
 	}
 }
 
@@ -96,6 +96,7 @@ int Args::process_limit(int &i, int argc, char* argv[])
 	return 0;
 }
 
+/*
 int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 {
 	i++;
@@ -112,6 +113,49 @@ int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
 	}
 	return ERROR;
 }
+*/
+int Args::process_theme(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	
+	Util util;
+	int match = util.veccmp<std::string>(std::string(argv[i]), themenames);
+	if (match != ERROR)
+	{
+		themeid = match;
+		return 0;
+	}
+	return ERROR;
+}
+
+int Args::process_background(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i  > argc-1)
+		return ERROR;
+
+	Util util;
+	int match = util.veccmp<std::string>(std::string(argv[i]), colnames);
+	if (match != ERROR)
+	{
+		bg_col = match;
+		return 0;
+	}
+	return ERROR;
+}
+
+int Args::process_cursor(int &i, int argc, char* argv[])
+{
+	/* TODO: Just as custom themes,
+	 * setting a cursor color independent from the
+	 * theme is currently not supported, In future,
+	 * the user should be able to provide a theme
+	 * name or an HEX/RGB value here.
+	 */
+	return ERROR;
+}
 
 // TODO: Theme names could get names that aren't valid ANSI
 // cursor escape code names; 
@@ -121,12 +165,4 @@ std::string Args::colid_to_string(int colid)
 		return themenames[colid];
 	else
 		return "white";
-}
-
-int Args::get_cur()
-{
-	if (cur_color == -1)
-		return themeid;
-	else
-		return cur_color;
 }
