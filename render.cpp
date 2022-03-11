@@ -132,7 +132,7 @@ int Render::run(Args my_args, File my_scroll)
 	/* Set cursor color
 	 * This has to be done before initscr() is called
 	 */
-	change_cur_color(my_args.get_curtheme(my_args.get_themeid()));
+	change_cur_color(my_args.get_curtheme());
 	 
 	initscr();
 	noecho(); // Turn off printing of pressed character

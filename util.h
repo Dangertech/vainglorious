@@ -32,4 +32,5 @@ class Util
 			}
 			return nullptr;
 		}
+		bool is_number(std::string string);
 } extern util;

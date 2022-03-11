@@ -8,6 +8,7 @@ void Args::process(int argc, char* argv[])
 {
 	for (int i = 1; i<argc; i++)
 	{
+		Util util;
 		int match = util.veccmp<std::string>(std::string(argv[i]), switches);
 		switch (match)
 		{
@@ -154,7 +155,46 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 	 * the user should be able to provide a theme
 	 * name or an HEX/RGB value here.
 	 */
+	i++;
+	std::string input = std::string(argv[i]);
+	 
+	/* Check if a theme name or id is provided */
+	int match = 0;
+	Util util;
+	if (util.is_number(input))
+		match = std::stoi(input);
+	else
+		match = util.veccmp<std::string>(input, themenames);
+	 
+	if (match != ERROR)
+	{
+		if (match < themenames.size() && match >= 0)
+		{
+			custom_cur = curcols[match]; 
+			return 0;
+		}
+	}
+	 
+	/* TODO: Check if a RGB value is provided (like "0,255,0") */
+	 
+	/* Check if a HEX value is provided (like "#00ff00") */
+	if (input.find('#') == 1)
+	{
+		if (input.size() == 7)
+		{
+			/* TODO: Process HEX input */
+			return ERROR;
+		}
+	}
 	return ERROR;
+}
+
+std::vector<unsigned char> Args::get_curtheme()
+{
+	if (custom_cur.size() == 0)
+		return curcols[themeid];
+	else
+		return custom_cur;
 }
 
 // TODO: Theme names could get names that aren't valid ANSI

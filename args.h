@@ -22,6 +22,11 @@ struct Color
 class Args
 {
 	private:
+
+		/* General Argument management
+		 * Processers for the flags are
+		 * managed by the public process_args()
+		 */
 		std::string file = DEF_FILE;
 		bool dry = false;
 		int limit = 4;
@@ -79,7 +84,13 @@ class Args
 			}
 			
 		};
+		int process_file(int &i, int argc, char * argv[]);
+		int process_limit(int &i, int argc, char * argv[]);
 		 
+		int process_theme(int &i, int argc, char * argv[]);
+		int process_background(int &i, int argc, char * argv[]);
+		int process_cursor(int &i, int argc, char * argv[]);
+
 
 		// Color settings
 		int themeid = 0;
@@ -96,7 +107,8 @@ class Args
 		 */
 		std::vector<std::string> themenames =
 		{
-			"green"
+			"green",
+			"test"
 		};
 
 		/* General accepted names of colors,
@@ -115,7 +127,6 @@ class Args
 			"white"
 		};
 
-
 		/* The default colors for the predefined themes
 		 * The second layer is sorted by the theme ids
 		 */
@@ -133,19 +144,18 @@ class Args
 				{159,       667, 1000, 941,{7, {1,1}, 70} }
 			}
 		};
+		/* Cursor colors corresponding to their schemes */
 		std::vector<std::vector<unsigned char>> curcols =
 		{
 			// GREEN
-			{0, 255, 0}
+			{0, 255, 0},
+			{55, 255, 212}
 		};
+		/* Custom cursor scheme set by the user */
+		std::vector<unsigned char> custom_cur = {};
 		bool show_cursor = true;
 		 
-		int process_file(int &i, int argc, char * argv[]);
-		int process_limit(int &i, int argc, char * argv[]);
-		 
-		int process_theme(int &i, int argc, char * argv[]);
-		int process_background(int &i, int argc, char * argv[]);
-		int process_cursor(int &i, int argc, char * argv[]);
+
 		 
 	public:
 		void process(int argc, char* argv[]);
@@ -159,5 +169,8 @@ class Args
 		int get_themeid() { return themeid; }
 		std::vector<Color> get_theme_cols(int theme_id) { return themecols[themeid];}
 		bool get_show_cursor() { return show_cursor; }
-		std::vector<unsigned char> get_curtheme(int theme_id) { return curcols[themeid]; }
+		/* Returns curcol of theme_id when custom_cur is not set,
+		 * custom_cur content if otherwise
+		 */
+		std::vector<unsigned char> get_curtheme();
 };
