@@ -67,20 +67,14 @@ class Args
 				+ "\t\tExample: '" + C_GREEN_U + "vain --limit 1" + C_OFF + "'\n"
 				+ "\t\tDefault: " + int_st(limit) + "\n"
 			},
-			{"color",
-				s("Usage of -F/--foreground, -B/--background and -C/--cursor:\n")
-				+ "\tChange the foreground, background or cursor color with one of eight predefined color names\n"
-				+ "\t\tExample: '" + C_GREEN_U + "vain -F red -B white" + C_OFF + "'\n"
-				+ "\t\tAll accepted color names:\n"
-				+ "\t\t\tblack\n"
-				+ "\t\t\tred\n"
-				+ "\t\t\tgreen\n"
-				+ "\t\t\tyellow\n"
-				+ "\t\t\tblue\n"
-				+ "\t\t\tmagenta\n"
-				+ "\t\t\tcyan\n"
-				+ "\t\t\twhite\n"
-				+ "\t\tDefault: green foreground, black background, cursor adapts to foreground color\n"
+			{"cursor",
+				s("Usage of -C/--cursor:\n")
+				+ "\tSet the cursor color through either a theme name/id, a RGB value or a HEX value;\n"
+				+ "\tExamples:\n"
+				+ "\t\t- Theme name/id: '" + C_GREEN_U + "vain -C 1" + C_OFF + "' sets the cursor color to the predefined cursor color of the theme with ID 1\n"
+				+ "\t\t- RGB value: '" + C_GREEN_U + "vain -C \"85, 255, 0\"" + C_OFF + "' sets the cursor color to a bright green\n"
+				+ "\t\t- HEX value: '" + C_GREEN_U + "vain -C \"#3ebfb3\"" + C_OFF + "' sets the cursor color to a teal tone\n"
+				+ "\tDefault: Cursor color is defined by the theme you chose\n"
 			}
 			
 		};

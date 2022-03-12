@@ -29,22 +29,42 @@ void Args::process(int argc, char* argv[])
 			case 6: case 7:
 				if (process_theme(i, argc, argv) == ERROR)
 				{
-					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 8: case 9:
 				if (process_background(i, argc, argv) == ERROR)
 				{
-					std::cout << err_msgs.at("color");
 					exit(1);
 				}
 				break;
 			case 10: case 11:
-				if (process_cursor(i, argc, argv) == ERROR)
+				switch(process_cursor(i, argc, argv))
 				{
-					std::cout << err_msgs.at("color");
-					exit(1);
+					case 0:
+						break;
+					case -1:
+						std::cout << "The RED part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case -2:
+						std::cout << "The GREEN part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case -3:
+						std::cout << "The BLUE part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case 16: case ERROR:
+						std::cout << err_msgs.at("cursor");
+						exit(1);
+						break;
 				}
 				break;
 			case 12: case 13:
@@ -178,12 +198,35 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 	/* TODO: Check if a RGB value is provided (like "0,255,0") */
 	 
 	/* Check if a HEX value is provided (like "#00ff00") */
-	if (input.find('#') == 1)
+	if (input.find('#') == 0)
 	{
 		if (input.size() == 7)
 		{
 			/* TODO: Process HEX input */
-			return ERROR;
+			try
+			{
+				custom_cur = util.hextorgb(input);
+			}
+			catch (int e)
+			{
+				std::cout << "Invalid!" << std::endl;
+				// Invalidate input
+				custom_cur = {};
+				switch (e)
+				{
+					case 1:
+						return -1;
+						break;
+					case 2:
+						return -2;
+						break;
+					case 3:
+						return -3;
+						break;
+				}
+				return -16;
+			}
+			return 0;
 		}
 	}
 	return ERROR;

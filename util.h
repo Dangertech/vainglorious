@@ -6,6 +6,9 @@
 
 class Util
 {
+	private:
+		// Convert a base 16 digit to it's base 10 equivalent
+		int sixteen_to_ten(char ten_str);
 	public:
 		template <typename T>
 		int veccmp(T to_comp, std::vector<T> vec)
@@ -33,4 +36,5 @@ class Util
 			return nullptr;
 		}
 		bool is_number(std::string string);
-} extern util;
+		std::vector<unsigned char> hextorgb(std::string hex);
+};
