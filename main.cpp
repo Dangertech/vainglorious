@@ -3,6 +3,7 @@
 #include "file.h"
 #include "render.h"
 #include "const.h"
+#include "util.h"
 
 Args args;
 File scrollfile;

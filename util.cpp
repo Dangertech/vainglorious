@@ -1,4 +1,5 @@
 #include <string>
+#include <iostream>
 #include "util.h"
 
 int Util::sixteen_to_ten(char ten_str)
@@ -45,4 +46,34 @@ std::vector<unsigned char> Util::hextorgb(std::string hex)
 	else
 		throw 3;
 	return ret;
+}
+
+std::vector<std::string> Util::split_at(std::string splitchar, std::string input)
+{
+	std::vector<std::string> ret;
+	int pointer = 0;
+	 
+	std::string temp;
+	while (1 == 1)
+	{
+		while (input[pointer] != splitchar[0])
+		{
+			if (pointer >= input.size())
+			{
+				if (temp.size())
+					ret.push_back(temp);
+				return ret;
+			}
+			temp += input[pointer];
+			pointer++;
+		}
+		ret.push_back(temp);
+		temp = "";
+		int spoint = 0;
+		while (splitchar[spoint] == input[pointer])
+		{
+			spoint++;
+			pointer++;
+		}
+	}
 }

@@ -85,6 +85,8 @@ class Args
 		int process_background(int &i, int argc, char * argv[]);
 		int process_cursor(int &i, int argc, char * argv[]);
 
+		std::vector<unsigned char> unify_color_input(std::string input);
+
 
 		// Color settings
 		int themeid = 0;

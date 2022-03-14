@@ -43,22 +43,28 @@ void Args::process(int argc, char* argv[])
 				{
 					case 0:
 						break;
-					case -1:
+					case 1:
 						std::cout << "The RED part of the hex code you provided is invalid.\n"
 							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
 							<< std::endl;
 						exit(1);
 						break;
-					case -2:
+					case 2:
 						std::cout << "The GREEN part of the hex code you provided is invalid.\n"
 							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
 							<< std::endl;
 						exit(1);
 						break;
-					case -3:
+					case 3:
 						std::cout << "The BLUE part of the hex code you provided is invalid.\n"
 							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
 							<< std::endl;
+						exit(1);
+						break;
+					case 255:
+						std::cout << "If you tried to enter an RGB value, you have to give three numbers between 0 and 256,\n"
+							<< "separated by commata, enclosed in quotes, like this:\n" 
+							<< C_GREEN_U << "\tvain -C \"0, 255, 0\"" << C_OFF << std::endl;
 						exit(1);
 						break;
 					case 16: case ERROR:
@@ -169,18 +175,28 @@ int Args::process_background(int &i, int argc, char* argv[])
 
 int Args::process_cursor(int &i, int argc, char* argv[])
 {
-	/* TODO: Just as custom themes,
-	 * setting a cursor color independent from the
-	 * theme is currently not supported, In future,
-	 * the user should be able to provide a theme
-	 * name or an HEX/RGB value here.
-	 */
+	 
 	i++;
 	std::string input = std::string(argv[i]);
+	std::vector<unsigned char> ret;
+	try
+	{
+		ret = unify_color_input(input); 
+	}
+	catch (int e)
+	{
+		return e; // Errors are handled by process_args itself
+	}
+	custom_cur = ret;
+	return 0;
+}
+
+std::vector<unsigned char> Args::unify_color_input(std::string input)
+{
+	Util util;
 	 
 	/* Check if a theme name or id is provided */
 	int match = 0;
-	Util util;
 	if (util.is_number(input))
 		match = std::stoi(input);
 	else
@@ -190,46 +206,68 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 	{
 		if (match < themenames.size() && match >= 0)
 		{
-			custom_cur = curcols[match]; 
-			return 0;
+			return curcols[match]; 
 		}
 	}
 	 
-	/* TODO: Check if a RGB value is provided (like "0,255,0") */
+	/* Check if a RGB value is provided (like "0,255,0") */
+	std::vector<std::string> rgb = util.split_at(", ", input);
+	if (rgb.size() == 3)
+	{
+		// TODO
+		std::vector<unsigned char> rgbvals;
+		for (int i = 0; i<3; i++)
+		{
+			int rgbval = 0;
+			try
+			{
+				rgbval = std::stoi(rgb[i]);
+			}
+			catch (std::invalid_argument& e)
+			{
+				throw 255;
+			}
+			 
+			if (rgbval >= 0 && rgbval <= 255)
+				rgbvals.push_back(rgbval);
+			else
+				throw 255;
+		}
+		return rgbvals;
+	}
 	 
 	/* Check if a HEX value is provided (like "#00ff00") */
 	if (input.find('#') == 0)
 	{
 		if (input.size() == 7)
 		{
-			/* TODO: Process HEX input */
+			std::vector<unsigned char> curcol;
 			try
 			{
-				custom_cur = util.hextorgb(input);
+				curcol = util.hextorgb(input);
 			}
 			catch (int e)
 			{
-				std::cout << "Invalid!" << std::endl;
 				// Invalidate input
 				custom_cur = {};
 				switch (e)
 				{
 					case 1:
-						return -1;
+						throw 1;
 						break;
 					case 2:
-						return -2;
+						throw 2;
 						break;
 					case 3:
-						return -3;
+						throw 3;
 						break;
 				}
-				return -16;
+				throw 16;
 			}
-			return 0;
+			return curcol;
 		}
 	}
-	return ERROR;
+	throw ERROR;
 }
 
 std::vector<unsigned char> Args::get_curtheme()
