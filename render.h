@@ -28,7 +28,7 @@ class Render
 		void change_cur_color(std::vector<unsigned char> rgb);
 
 		/* Gets a random pair with the defined probabilities */
-		int random_pair(std::vector<Color> );
+		Color random_col(std::vector<Color> );
 		void add_line(std::string line, std::vector<Color> col_data);
 		void cleardraw();
 	public:

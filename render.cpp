@@ -32,7 +32,7 @@ void Render::change_cur_color(std::vector<unsigned char> rgb)
 	printf("\e]12;#%.2x%.2x%.2x\a", rgb[0], rgb[1], rgb[2]);
 }
 
-int Render::random_pair(std::vector<Color> col_data)
+Color Render::random_col(std::vector<Color> col_data)
 {
 	// Basically our seed without using the time
 	std::random_device rd;
@@ -41,23 +41,25 @@ int Render::random_pair(std::vector<Color> col_data)
 	// Get weights
 	  
 	// Get until where to size vector
+	/*
 	int highest_pair = 0;
 	for (int i = 0; i<col_data.size(); i++)
 	{
 		if (col_data[i].pair_prob.pair_id > highest_pair)
 			highest_pair = col_data[i].pair_prob.pair_id;
 	}
-	std::vector<int> weights(highest_pair+1); // +1 because 0 is no color pair
+	*/
+	std::vector<int> weights(col_data.size()); // +1 because 0 is no color pair
 	// Fill weights with defined weights from pair_data
 	for (int i = 0; i<col_data.size(); i++)
 	{
-		weights[col_data[i].pair_prob.pair_id] = col_data[i].pair_prob.prob;
+		weights[i] = col_data[i].pair_prob.prob;
 	}
 
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
 	 
 	/* Returns numbers between weights.begin() and weights.end() according to their content */
-	return dist(gen); 
+	return col_data[dist(gen)]; 
 }
 
 void Render::add_line(std::string line, std::vector<Color> col_data)
@@ -72,18 +74,23 @@ void Render::add_line(std::string line, std::vector<Color> col_data)
 			add_char('\n', 1);
 	for (int i = 0; i<line.size(); i++)
 	{
-		int colpair;
+		Color col;
+		// Decide Color pair
 		if (col_data.size() > 1)
 		{
 			// Generate colpair from pair_data
-			colpair = random_pair(col_data);
+			col = random_col(col_data);
 		}
 		else if (col_data.size() == 1)
-			colpair = col_data[0].pair_prob.pair_id; // Just save the resources
-		else
-			colpair = 1;
+			col = col_data[0]; // Just save the resources
 		 
-		add_char(line[i], colpair);
+		// TODO: Get a random integer between second and first off app_length
+		for (int app_count = 0; app_count < col.pair_prob.app_length.second; app_count++)
+		{
+			add_char(line[i], col.pair_prob.pair_id);
+			if (app_count < col.pair_prob.app_length.second-1)
+				i++;
+		}
 	}
 }
 
