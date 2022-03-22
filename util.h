@@ -38,4 +38,5 @@ class Util
 		bool is_number(std::string string);
 		std::vector<unsigned char> hextorgb(std::string hex);
 		std::vector<std::string> split_at(std::string splitchar, std::string input);
+		int random_int(int min, int max);
 };

@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <random>
 #include "util.h"
 
 int Util::sixteen_to_ten(char ten_str)
@@ -76,4 +77,16 @@ std::vector<std::string> Util::split_at(std::string splitchar, std::string input
 			pointer++;
 		}
 	}
+}
+
+int Util::random_int(int min, int max)
+{
+	// Seeder
+	std::random_device rd;
+	 
+	std::mt19937 gen(rd());
+	 
+	std::uniform_int_distribution<int> dist(min, max);
+	 
+	return dist(gen);
 }

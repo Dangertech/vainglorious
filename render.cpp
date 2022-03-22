@@ -39,26 +39,16 @@ Color Render::random_col(std::vector<Color> col_data)
 	std::mt19937 gen(rd());
 
 	// Get weights
-	  
-	// Get until where to size vector
-	/*
-	int highest_pair = 0;
+	std::vector<int> weights(col_data.size());
+	// Fill weights with defined weights from probability
 	for (int i = 0; i<col_data.size(); i++)
-	{
-		if (col_data[i].pair_prob.pair_id > highest_pair)
-			highest_pair = col_data[i].pair_prob.pair_id;
-	}
-	*/
-	std::vector<int> weights(col_data.size()); // +1 because 0 is no color pair
-	// Fill weights with defined weights from pair_data
-	for (int i = 0; i<col_data.size(); i++)
-	{
 		weights[i] = col_data[i].pair_prob.prob;
-	}
 
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
 	 
-	/* Returns numbers between weights.begin() and weights.end() according to their content */
+	/* dist(gen) returns a color index according to the weights
+	 * The whole chosen color is returned
+	 */
 	return col_data[dist(gen)]; 
 }
 
@@ -83,13 +73,20 @@ void Render::add_line(std::string line, std::vector<Color> col_data)
 		}
 		else if (col_data.size() == 1)
 			col = col_data[0]; // Just save the resources
-		 
-		// TODO: Get a random integer between second and first off app_length
-		for (int app_count = 0; app_count < col.pair_prob.app_length.second; app_count++)
+		
+		// Get a random integer between second and first of app_length
+		Util util;
+		int length = util.random_int(col.pair_prob.app_length.first, col.pair_prob.app_length.second);
+		for (int app_count = 0; app_count < length; app_count++)
 		{
 			add_char(line[i], col.pair_prob.pair_id);
-			if (app_count < col.pair_prob.app_length.second-1)
-				i++;
+			if (app_count < length-1)
+			{
+				if (i+1 < line.size())
+					i++;
+				else
+					break; // Break loop when line is finished now
+			}
 		}
 	}
 }
