@@ -76,7 +76,8 @@ void Render::add_line(std::string line, std::vector<Color> col_data)
 		
 		// Get a random integer between second and first of app_length
 		Util util;
-		int length = util.random_int(col.pair_prob.app_length.first, col.pair_prob.app_length.second);
+		int length = util.random_int(col.pair_prob.app_length.first, 
+				col.pair_prob.app_length.second);
 		for (int app_count = 0; app_count < length; app_count++)
 		{
 			add_char(line[i], col.pair_prob.pair_id);
@@ -133,6 +134,8 @@ void Render::cleardraw()
 
 int Render::run(Args my_args, File my_scroll)
 {
+	DefTheme thm;
+	std::vector<Color> theme = thm.get_theme(my_args.get_themeid());
 	/* Set cursor color
 	 * This has to be done before initscr() is called
 	 */
@@ -147,7 +150,6 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	// Init colors
 	my_args.makepairs(my_args.get_themeid());
-	bkgd(COLOR_PAIR(1)); // Background is bg of default colorpair
 	/* Draw everything once to set the background everywhere
 	 * bkgd() or wbkgd() alone leaves a column black at the right 
 	 * side of my terminal for some reason
@@ -173,7 +175,7 @@ int Render::run(Args my_args, File my_scroll)
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		add_line(myblock[blockpos].c_str(), my_args.get_theme_cols(0));
+		add_line(myblock[blockpos].c_str(), theme);
 		render_grid();
 		blockpos++;
 		// Start moving up when the text has advanced far enough

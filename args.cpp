@@ -3,6 +3,7 @@
 #include "args.h"
 #include "util.h"
 #include "const.h"
+#include "theme.h"
 
 void Args::process(int argc, char* argv[])
 {
@@ -88,9 +89,10 @@ void Args::process(int argc, char* argv[])
 
 void Args::makepairs(int my_theme_id)
 {
-	for (int cols = 0; cols<themecols[my_theme_id].size(); cols++)
+	DefTheme thm;
+	for (int cols = 0; cols<thm.get_theme(my_theme_id).size(); cols++)
 	{
-		Color my_color = themecols[themeid][cols];
+		Color my_color = thm.get_theme(my_theme_id)[cols];
 		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
 		init_pair(my_color.pair_prob.pair_id, my_color.id, bg_col);
 	}
@@ -148,7 +150,9 @@ int Args::process_theme(int &i, int argc, char* argv[])
 		return ERROR;
 	
 	Util util;
-	int match = util.veccmp<std::string>(std::string(argv[i]), themenames);
+	DefTheme thm;
+	int match = util.veccmp<std::string>(std::string(argv[i]), 
+			thm.get_themenames());
 	if (match != ERROR)
 	{
 		themeid = match;
@@ -164,7 +168,9 @@ int Args::process_background(int &i, int argc, char* argv[])
 		return ERROR;
 
 	Util util;
-	int match = util.veccmp<std::string>(std::string(argv[i]), colnames);
+	DefTheme thm;
+	int match = util.veccmp<std::string>(std::string(argv[i]), 
+			thm.get_colnames());
 	if (match != ERROR)
 	{
 		bg_col = match;
@@ -194,19 +200,21 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 std::vector<unsigned char> Args::unify_color_input(std::string input)
 {
 	Util util;
+	DefTheme thm;
+	std::vector<std::string> tnames= thm.get_themenames();
 	 
 	/* Check if a theme name or id is provided */
 	int match = 0;
 	if (util.is_number(input))
 		match = std::stoi(input);
 	else
-		match = util.veccmp<std::string>(input, themenames);
+		match = util.veccmp<std::string>(input, tnames);
 	 
 	if (match != ERROR)
 	{
-		if (match < themenames.size() && match >= 0)
+		if (match < tnames.size() && match >= 0)
 		{
-			return curcols[match]; 
+			return thm.get_curcol(match); 
 		}
 	}
 	 
@@ -272,18 +280,9 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 
 std::vector<unsigned char> Args::get_curtheme()
 {
+	DefTheme thm;
 	if (custom_cur.size() == 0)
-		return curcols[themeid];
+		return thm.get_curcol(themeid);
 	else
 		return custom_cur;
-}
-
-// TODO: Theme names could get names that aren't valid ANSI
-// cursor escape code names; 
-std::string Args::colid_to_string(int colid)
-{
-	if (colid < themenames.size() && colid >= 0)
-		return themenames[colid];
-	else
-		return "white";
 }

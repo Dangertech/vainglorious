@@ -49,7 +49,8 @@ std::vector<unsigned char> Util::hextorgb(std::string hex)
 	return ret;
 }
 
-std::vector<std::string> Util::split_at(std::string splitchar, std::string input)
+std::vector<std::string> 
+Util::split_at(std::string splitchar, std::string input)
 {
 	std::vector<std::string> ret;
 	int pointer = 0;
