@@ -30,6 +30,7 @@ void Args::process(int argc, char* argv[])
 			case 6: case 7:
 				if (process_theme(i, argc, argv) == ERROR)
 				{
+					std::cout << err_msgs.at("theme");
 					exit(1);
 				}
 				break;
@@ -156,6 +157,12 @@ int Args::process_theme(int &i, int argc, char* argv[])
 	if (match != ERROR)
 	{
 		themeid = match;
+		return 0;
+	}
+	int num = atoi(argv[i]);
+	if (num >= 0 && num < thm.get_themenames().size()) 
+	{
+		themeid = num;
 		return 0;
 	}
 	return ERROR;

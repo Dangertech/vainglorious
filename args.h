@@ -42,6 +42,18 @@ class Args
 		 
 		#define s(X) std::string(X)
 		#define int_st(X) std::to_string(X)
+		// Ugly bodge for err_msgs.at("theme");
+		DefTheme listener;
+		std::string print_themes()
+		{
+			std::string ret;
+			std::vector<std::string> names = listener.get_themenames();
+			for (int i = 0; i<names.size(); i++)
+			{
+				ret += "\t\t" + names[i] + "\n";
+			}
+			return ret;
+		}
 		std::unordered_map<std::string, std::string> err_msgs =
 		{
 			{"file",
@@ -67,8 +79,22 @@ class Args
 				+ "\t\t- HEX value: '" + C_GREEN_U + "vain -C \"#3ebfb3\"" 
 					+ C_OFF + "' sets the cursor color to a teal tone\n"
 				+ "\tDefault: Cursor color is defined by the theme you chose\n"
+			},
+			{"theme",
+				s("Usage of -T/--theme:\n")
+				+ "\tChange the theme to one of the predefined ones;\n"
+				+ "\tThere are currently " 
+					+ int_st(listener.get_themenames().size())
+					+ " themes available:\n"
+				+ print_themes()
+				+ "\tBIG THANKS to https://github.com/st3w/neo for some "
+					+ "theme colors which I shamelessly stole from their project\n"
+				+ "\tExamples:\n"
+				+ "\t\tBy name:  '" + C_GREEN_U + "vain --theme gold" + C_OFF + "'\n"
+				+ "\t\tBy index: '" + C_GREEN_U + "vain --theme 1" + C_OFF + "'\n"
+				+ "\t\t\t(The index starts at 0, so 1 is the gold theme)\n"
+				+ "\tDefault: Green theme with index 0\n"
 			}
-			
 		};
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);

@@ -32,7 +32,8 @@ class DefTheme
 		 */
 		std::vector<std::string> themenames =
 		{
-			"green"
+			"green",
+			"gold"
 		};
 		/* General accepted names of colors,
 		 * used for setting the background color,
@@ -52,24 +53,35 @@ class DefTheme
 		/* The default colors for the predefined themes
 		 * The second layer is sorted by the theme ids
 		 */
+		// These awesome colors are stolen from st3w/neo
 		std::vector<std::vector<Color>> themecols =
 		{
-			// GREEN example
+			// GREEN
 			{
 				// COLORID, R,   G,   B,ColPair,length,probability
-				{234,       71,  141, 83,  {1, {1,4}, 3} },
-				{22,        149, 243, 161, {2, {2,3}, 2} },
-				{28,        188, 596, 318, {3, {1,1}, 3} },
-				{35,        188, 714, 397, {4, {1,1}, 5} },
-				{78,        227, 925, 561, {5, {4,8}, 7} },
-				{84,        271, 973, 667, {6, {1,1}, 6} },
-				{159,       667, 1000, 941,{7, {3,6}, 3} }
+				{234,       71,  141, 83,  {1, {8,10}, 1} },
+				{22,        149, 243, 161, {2, {8,10}, 1} },
+				{28,        188, 596, 318, {3, {1,2}, 7} },
+				{35,        188, 714, 397, {4, {1,3}, 8} },
+				{78,        227, 925, 561, {5, {4,8}, 9} },
+				{84,        271, 973, 667, {6, {3,5}, 12} },
+				{159,       667, 1000, 941,{7, {3,6}, 7} }
+			},
+			// GOLD
+			{
+				{58, 839, 545, 216, {1, {8, 10}, 1} },
+				{94, 905, 694, 447, {2, {8, 10}, 1} },
+				{172, 945, 831, 635, {3, {8, 10}, 1} },
+				{178, 1000, 922, 565, {4, {8, 10}, 1} },
+				{228, 1000, 953, 796, {5, {8, 10}, 1} },
+				{230, 976, 976, 968, {6, {8, 10}, 1} }
 			}
 		};
 		/* Cursor colors corresponding to their schemes */
 		std::vector<std::vector<unsigned char>> curcols =
 		{
 			// GREEN
-			{0, 255, 0}
+			{68, 244, 167},
+			{255, 255, 0}
 		};
 };
