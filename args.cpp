@@ -94,6 +94,11 @@ void Args::makepairs(int my_theme_id)
 	for (int cols = 0; cols<thm.get_theme(my_theme_id).size(); cols++)
 	{
 		Color my_color = thm.get_theme(my_theme_id)[cols];
+		/* If the given RGB value is invalid, init_color
+		 * just doesn't change the color which enables
+		 * setting colors of default pairs through just the
+		 * same system as custom RGB colors in theme.h
+		 */
 		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
 		init_pair(my_color.pair_prob.pair_id, my_color.id, bg_col);
 	}
@@ -152,18 +157,21 @@ int Args::process_theme(int &i, int argc, char* argv[])
 	
 	Util util;
 	DefTheme thm;
-	int match = util.veccmp<std::string>(std::string(argv[i]), 
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), 
 			thm.get_themenames());
 	if (match != ERROR)
 	{
 		themeid = match;
 		return 0;
 	}
-	int num = atoi(argv[i]);
-	if (num >= 0 && num < thm.get_themenames().size()) 
+	if (util.is_number(std::string(argv[i])))
 	{
-		themeid = num;
-		return 0;
+		int num = atoi(argv[i]);
+		if (num >= 0 && num < thm.get_themenames().size()) 
+		{
+			themeid = num;
+			return 0;
+		}
 	}
 	return ERROR;
 }

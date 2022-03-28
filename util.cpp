@@ -91,3 +91,13 @@ int Util::random_int(int min, int max)
 	 
 	return dist(gen);
 }
+
+std::string Util::to_lower(std::string input)
+{
+	std::string lower;
+	for (int i = 0; i<input.size(); i++)
+	{
+		lower += std::tolower(input[i]);
+	}
+	return lower;
+}

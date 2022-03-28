@@ -90,9 +90,11 @@ class Args
 				+ "\tBIG THANKS to https://github.com/st3w/neo for some "
 					+ "theme colors which I shamelessly stole from their project\n"
 				+ "\tExamples:\n"
-				+ "\t\tBy name:  '" + C_GREEN_U + "vain --theme gold" + C_OFF + "'\n"
+				+ "\t\tBy name:  '" + C_GREEN_U + "vain --theme " 
+					+ listener.get_themenames()[1] + C_OFF + "'\n"
 				+ "\t\tBy index: '" + C_GREEN_U + "vain --theme 1" + C_OFF + "'\n"
-				+ "\t\t\t(The index starts at 0, so 1 is the gold theme)\n"
+				+ "\t\t\t(The index starts at 0, so 1 is the " 
+					+ listener.get_themenames()[1] + " theme)\n"
 				+ "\tDefault: Green theme with index 0\n"
 			}
 		};
