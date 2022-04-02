@@ -1,6 +1,7 @@
 #include <string>
 #include <ncurses.h>
 #include <random>
+#include <iostream>
 #include "render.h"
 #include "file.h"
 #include "util.h"
@@ -134,8 +135,7 @@ void Render::cleardraw()
 
 int Render::run(Args my_args, File my_scroll)
 {
-	DefTheme thm;
-	std::vector<Color> theme = thm.get_theme(my_args.get_themeid());
+	std::vector<Color> theme = my_args.get_theme();
 	/* Set cursor color
 	 * This has to be done before initscr() is called
 	 */
@@ -149,7 +149,7 @@ int Render::run(Args my_args, File my_scroll)
 		curs_set(0);
 	 
 	// Init colors
-	my_args.makepairs(my_args.get_themeid());
+	my_args.makepairs();
 	/* Draw everything once to set the background everywhere
 	 * bkgd() or wbkgd() alone leaves a column black at the right 
 	 * side of my terminal for some reason

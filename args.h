@@ -29,6 +29,8 @@ class Args
 			"--limit",
 			"-T",
 			"--theme",
+			"-F",
+			"--colorfile",
 			"-B",
 			"--background",
 			"-C",
@@ -96,12 +98,17 @@ class Args
 				+ "\t\t\t(The index starts at 0, so 1 is the " 
 					+ listener.get_themenames()[1] + " theme)\n"
 				+ "\tDefault: Green theme with index 0\n"
+			},
+			{"custom_theme",
+				s("Usage of -F/--colorfile:\n")
+				+ "\t(This entry is a stub and will be extended in the future)\n"
 			}
 		};
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);
 		 
 		int process_theme(int &i, int argc, char * argv[]);
+		int process_custom_theme(int &i, int argc, char * argv[]);
 		int process_background(int &i, int argc, char * argv[]);
 		int process_cursor(int &i, int argc, char * argv[]);
 
@@ -117,6 +124,8 @@ class Args
 		int bg_col = COLOR_BLACK;
 		/* if this is false, only color 0 from a theme will be used */
 		bool multicol = true;
+		/* Custom theme that is set if the user gives a valid colorfile */
+		std::vector<Color> custom_theme = {};
 		/* Custom cursor scheme set by the user */
 		std::vector<unsigned char> custom_cur = {};
 		bool show_cursor = true;
@@ -125,13 +134,15 @@ class Args
 		 
 	public:
 		void process(int argc, char* argv[]);
-		void makepairs(int themeid);
+		void makepairs();
 		 
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
 		bool get_dry() { return dry; }
 		 
 		int get_themeid() { return themeid; }
+		/* Returns either default theme or custom theme */
+		std::vector<Color> get_theme();
 		bool get_show_cursor() { return show_cursor; }
 		/* Returns curcol of theme_id when custom_cur is not set,
 		 * custom_cur content if otherwise

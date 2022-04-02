@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 #include "args.h"
 #include "util.h"
 #include "const.h"
@@ -35,12 +36,35 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 8: case 9:
+				switch (process_custom_theme(i, argc, argv))
+				{
+					case 0:
+						break;
+					case 1: // ERR_BAD_ARG
+						std::cout << "Your colorfile has an issue with it's "
+							<< "syntax." << std::endl
+							<< "\tHere is the info entry for colorfiles:" << std::endl
+							<< err_msgs.at("custom_theme");
+						exit(1);
+						break;
+					case 10: // ERR_UNKNOWN
+						std::cout << "The file at the location " << argv[i] << " that "
+							<< "could not be read.\nEither the file does "
+							<< "not exist or vainglorious needs elevated "
+							<< "privileges to access it." << std::endl
+							<< "\tHere is the info entry for colorfiles:" << std::endl
+							<< err_msgs.at("custom_theme");
+						exit(1);
+						break;
+				}
+				break;
+			case 10: case 11:
 				if (process_background(i, argc, argv) == ERROR)
 				{
 					exit(1);
 				}
 				break;
-			case 10: case 11:
+			case 12: case 13:
 				switch(process_cursor(i, argc, argv))
 				{
 					case 0:
@@ -75,10 +99,10 @@ void Args::process(int argc, char* argv[])
 						break;
 				}
 				break;
-			case 12: case 13:
+			case 14: case 15:
 				show_cursor = false;
 				break;
-			case 15:
+			case 17:
 				dry = true;
 				break;
 			default:
@@ -88,12 +112,12 @@ void Args::process(int argc, char* argv[])
 	}
 }
 
-void Args::makepairs(int my_theme_id)
+void Args::makepairs()
 {
 	DefTheme thm;
-	for (int cols = 0; cols<thm.get_theme(my_theme_id).size(); cols++)
+	for (int cols = 0; cols<get_theme().size(); cols++)
 	{
-		Color my_color = thm.get_theme(my_theme_id)[cols];
+		Color my_color = get_theme()[cols];
 		/* If the given RGB value is invalid, init_color
 		 * just doesn't change the color which enables
 		 * setting colors of default pairs through just the
@@ -131,24 +155,6 @@ int Args::process_limit(int &i, int argc, char* argv[])
 	return 0;
 }
 
-/*
-int Args::process_color(int &i, int argc, char* argv[], ColorSetters type)
-{
-	i++;
-	if (i > argc-1)
-		return ERROR;
-	 
-	std::string prop_col = std::string(argv[i]);
-	Util util;
-	int namematch = util.veccmp<std::string>(prop_col, themenames);
-	if (namematch != ERROR)
-	{
-		themeid = namematch;
-		return 0;
-	}
-	return ERROR;
-}
-*/
 int Args::process_theme(int &i, int argc, char* argv[])
 {
 	i++;
@@ -174,6 +180,78 @@ int Args::process_theme(int &i, int argc, char* argv[])
 		}
 	}
 	return ERROR;
+}
+
+int Args::process_custom_theme(int &i, int argc, char* argv[])
+{
+	// Get colorfile name
+	i++;
+	std::string name = std::string(argv[i]);
+	std::ifstream cfile(name);
+	if (!cfile.is_open())
+		return ERR_UNKNOWN; // File is unknown
+
+	// Set themeid to -1 to mark that the theem used is
+	// not to be found in DefTheme objects
+	themeid = -1;
+
+	// Parse colorfile
+	int lnum = 0;
+	std::string line;
+	while (getline(cfile, line))
+	{
+		Util util;
+		std::vector<std::string> spl = util.split_at(",", line);
+		bool hex = false;
+		if (spl[0][0] == '#')
+			hex = true;
+		if (!hex && spl.size() < 3) // Can't contain RGB value
+			return ERR_BAD_ARG;
+		std::vector<unsigned char> rgbval;
+		try
+		{
+			if (hex)
+				rgbval = unify_color_input(spl[0]);
+			else
+				rgbval = unify_color_input(spl[0] + "," + spl[1] + "," + spl[2]);
+		}
+		catch (int e)
+		{
+			return ERR_BAD_ARG;
+		}
+		/* TODO: bg_col needs to be updated to accept RGB values
+		if (lnum == 0)
+			bg_col = rgbval;
+		*/
+		int min = 1, max = 1, prob = 1;
+		if (hex && spl.size() >= 3)
+		{
+			min = std::stoi(spl[1]);
+			max = std::stoi(spl[2]);
+			if (spl.size() > 4)
+				prob = std::stoi(spl[3]);
+		}
+		else if (spl.size() >= 5)
+		{
+			min = std::stoi(spl[3]);
+			max = std::stoi(spl[4]);
+			if (spl.size() > 6)
+				prob = std::stoi(spl[5]);
+		}
+		if (min > max)
+		{
+			int orig_max = max;
+			max = min;
+			min = orig_max;
+		}
+		Color this_col = 
+			{lnum+35, int(rgbval[0]*NCFAC), 
+				int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC),
+				{lnum+1, {min, max}, prob}};
+		custom_theme.push_back(this_col);
+		lnum++;
+	}
+	return 0;
 }
 
 int Args::process_background(int &i, int argc, char* argv[])
@@ -291,6 +369,21 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 		}
 	}
 	throw ERROR;
+}
+
+std::vector<Color> Args::get_theme()
+{
+	std::vector<Color> ret;
+	if (custom_theme.size() == 0)
+	{
+		DefTheme thm;
+		ret = thm.get_theme(themeid);
+	}
+	else
+	{
+		ret = custom_theme;
+	}
+	return ret;
 }
 
 std::vector<unsigned char> Args::get_curtheme()
