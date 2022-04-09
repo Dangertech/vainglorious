@@ -114,6 +114,8 @@ void Args::process(int argc, char* argv[])
 
 void Args::makepairs()
 {
+	// Make background color
+	init_color(0, bg_col[0], bg_col[1], bg_col[2]);
 	DefTheme thm;
 	for (int cols = 0; cols<get_theme().size(); cols++)
 	{
@@ -124,7 +126,7 @@ void Args::makepairs()
 		 * same system as custom RGB colors in theme.h
 		 */
 		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
-		init_pair(my_color.pair_prob.pair_id, my_color.id, bg_col);
+		init_pair(my_color.pair_prob.pair_id, my_color.id, 0);
 	}
 }
 
@@ -260,6 +262,7 @@ int Args::process_background(int &i, int argc, char* argv[])
 	if (i  > argc-1)
 		return ERROR;
 
+	/*
 	Util util;
 	DefTheme thm;
 	int match = util.veccmp<std::string>(std::string(argv[i]), 
@@ -270,6 +273,22 @@ int Args::process_background(int &i, int argc, char* argv[])
 		return 0;
 	}
 	return ERROR;
+	*/
+	// TODO: Adapt for custom RGB input
+	std::string input = std::string(argv[i]);
+	std::vector<unsigned char> ret;
+	try
+	{
+		ret = unify_color_input(input);
+	}
+	catch (int e)
+	{
+		return e;
+	}
+	bg_col[0] = ret[0]*NCFAC;
+	bg_col[1] = ret[1]*NCFAC;
+	bg_col[2] = ret[2]*NCFAC;
+	return 0;
 }
 
 int Args::process_cursor(int &i, int argc, char* argv[])

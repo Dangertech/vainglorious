@@ -22,7 +22,7 @@ class Args
 		std::vector<std::string> switches =
 		{
 			"-f",
-			"--file",
+			"--scrollfile",
 			"-s",
 			"--scroll-mode",
 			"-l",
@@ -121,7 +121,8 @@ class Args
 		 * completely independent from
 		 * the set theme; It is used by args::makepairs()
 		 * to set the correct background color for every pair */
-		int bg_col = COLOR_BLACK;
+		// Uses rgb values from range 0 to 1000
+		std::vector<int> bg_col = {0, 0, 0};
 		/* if this is false, only color 0 from a theme will be used */
 		bool multicol = true;
 		/* Custom theme that is set if the user gives a valid colorfile */

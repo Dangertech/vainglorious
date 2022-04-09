@@ -186,6 +186,7 @@ int Render::run(Args my_args, File my_scroll)
 			move_up();
 	}
 	endwin();
+	// Reset cursor color
 	printf("\e]12;white\a");
 	return 0;
 }
