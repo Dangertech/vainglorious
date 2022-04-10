@@ -36,28 +36,25 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 8: case 9:
-				switch (process_custom_theme(i, argc, argv))
+			{
+				int ret = process_custom_theme(i, argc, argv);
+				if (ret == -1)
 				{
-					case 0:
-						break;
-					case 1: // ERR_BAD_ARG
-						std::cout << "Your colorfile has an issue with it's "
-							<< "syntax." << std::endl
-							<< "\tHere is the info entry for colorfiles:" << std::endl
-							<< err_msgs.at("custom_theme");
-						exit(1);
-						break;
-					case 10: // ERR_UNKNOWN
-						std::cout << "The file at the location " << argv[i] << " that "
-							<< "could not be read.\nEither the file does "
-							<< "not exist or vainglorious needs elevated "
-							<< "privileges to access it." << std::endl
-							<< "\tHere is the info entry for colorfiles:" << std::endl
-							<< err_msgs.at("custom_theme");
-						exit(1);
-						break;
+					std::cout << "The given colorfile could not be read"
+						<< "Please check file permissions, ownership "
+						<< "and existence." << std::endl;
+					exit(1);
+				}
+				else if (ret != 0)
+				{
+					std::cout << "The given colorfile is invalid near "
+						<< "line " C_GREEN_U << ret << C_OFF << "." << std::endl
+						<< "\tHere is the info entry for colorfiles:" << std::endl
+						<< err_msgs.at("custom_theme");
+					exit(1);
 				}
 				break;
+			}
 			case 10: case 11:
 				if (process_background(i, argc, argv) == ERROR)
 				{
@@ -191,7 +188,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 	std::string name = std::string(argv[i]);
 	std::ifstream cfile(name);
 	if (!cfile.is_open())
-		return ERR_UNKNOWN; // File is unknown
+		return -1; // File is unknown
 
 	// Set themeid to -1 to mark that the theem used is
 	// not to be found in DefTheme objects
@@ -202,18 +199,23 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 	std::string line;
 	while (getline(cfile, line))
 	{
+
+		// Discard line from a '%'(comment) sign on
+		for (int i = 0; i<line.size(); i++)
+		{
+			if (line[i] == '%')
+			{
+				line = line.substr(0, i);
+				break;
+			}
+		}
+		 
 		if (line.empty())
 		{
 			lnum++;
 			continue;
 		}
 		 
-		// Discard line from a '%'(comment) sign on
-		for (int i = 0; i<line.size(); i++)
-		{
-			if (line[i] == '%')
-				line = line.substr(0, i);
-		}
 		 
 		Util util;
 		std::vector<std::string> spl = util.split_at(",", line);
@@ -221,7 +223,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 		if (spl[0][0] == '#')
 			hex = true;
 		if (!hex && spl.size() < 3) // Can't contain RGB value
-			return ERR_BAD_ARG;
+			return lnum+1;
 		std::vector<unsigned char> rgbval;
 		try
 		{
@@ -232,7 +234,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 		}
 		catch (int e)
 		{
-			return ERR_BAD_ARG;
+			return lnum+1;
 		}
 		 
 		// First line is background color
@@ -276,6 +278,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 		custom_theme.push_back(this_col); // Push it to the theme
 		lnum++;
 	}
+	cfile.close();
 	return 0;
 }
 

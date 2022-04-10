@@ -109,6 +109,10 @@ class Args
 		int process_limit(int &i, int argc, char * argv[]);
 		 
 		int process_theme(int &i, int argc, char * argv[]);
+		/* Return values: Returns 0 if everything is OK,
+		 * or the line number in which an error was encountered,
+		 * starting at 1; Returns -1 if the file could not be opened
+		 */
 		int process_custom_theme(int &i, int argc, char * argv[]);
 		int process_background(int &i, int argc, char * argv[]);
 		int process_cursor(int &i, int argc, char * argv[]);
