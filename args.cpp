@@ -202,6 +202,19 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 	std::string line;
 	while (getline(cfile, line))
 	{
+		if (line.empty())
+		{
+			lnum++;
+			continue;
+		}
+		 
+		// Discard line from a '%'(comment) sign on
+		for (int i = 0; i<line.size(); i++)
+		{
+			if (line[i] == '%')
+				line = line.substr(0, i);
+		}
+		 
 		Util util;
 		std::vector<std::string> spl = util.split_at(",", line);
 		bool hex = false;
@@ -221,10 +234,16 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 		{
 			return ERR_BAD_ARG;
 		}
-		/* TODO: bg_col needs to be updated to accept RGB values
+		 
+		// First line is background color
 		if (lnum == 0)
-			bg_col = rgbval;
-		*/
+		{
+			bg_col = {int(rgbval[0]*NCFAC), int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC)};
+			lnum++;
+			continue;
+		}
+
+		// Determine min, max and probability
 		int min = 1, max = 1, prob = 1;
 		if (hex && spl.size() >= 3)
 		{
@@ -240,17 +259,21 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 			if (spl.size() > 6)
 				prob = std::stoi(spl[5]);
 		}
+
+		// Switch around min and max if they are mixed up
 		if (min > max)
 		{
 			int orig_max = max;
 			max = min;
 			min = orig_max;
 		}
+		 
+		// Construct final color
 		Color this_col = 
-			{lnum+35, int(rgbval[0]*NCFAC), 
-				int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC),
+			{lnum+35, 
+				int(rgbval[0]*NCFAC), int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC),
 				{lnum+1, {min, max}, prob}};
-		custom_theme.push_back(this_col);
+		custom_theme.push_back(this_col); // Push it to the theme
 		lnum++;
 	}
 	return 0;
@@ -262,19 +285,6 @@ int Args::process_background(int &i, int argc, char* argv[])
 	if (i  > argc-1)
 		return ERROR;
 
-	/*
-	Util util;
-	DefTheme thm;
-	int match = util.veccmp<std::string>(std::string(argv[i]), 
-			thm.get_colnames());
-	if (match != ERROR)
-	{
-		bg_col = match;
-		return 0;
-	}
-	return ERROR;
-	*/
-	// TODO: Adapt for custom RGB input
 	std::string input = std::string(argv[i]);
 	std::vector<unsigned char> ret;
 	try

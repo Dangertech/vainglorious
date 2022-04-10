@@ -103,6 +103,7 @@ class Args
 				s("Usage of -F/--colorfile:\n")
 				+ "\t(This entry is a stub and will be extended in the future)\n"
 			}
+			// TODO: Add entries for every flag
 		};
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);
