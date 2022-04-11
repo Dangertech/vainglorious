@@ -3,24 +3,34 @@
 #include <vector>
 #include <string>
 #include <ncurses.h>
+#include "theme.h"
 #include "const.h"
+
+
 
 class Args
 {
 	private:
+
+		/* General Argument management
+		 * Processers for the flags are
+		 * managed by the public process_args()
+		 */
 		std::string file = DEF_FILE;
 		bool dry = false;
 		int limit = 4;
 		std::vector<std::string> switches =
 		{
 			"-f",
-			"--file",
+			"--scrollfile",
 			"-s",
 			"--scroll-mode",
 			"-l",
 			"--limit",
+			"-T",
+			"--theme",
 			"-F",
-			"--foreground",
+			"--colorfile",
 			"-B",
 			"--background",
 			"-C",
@@ -31,19 +41,21 @@ class Args
 			"--dry",
 			"--help"
 		};
-		std::unordered_map<std::string, int> colnames =
-		{
-			{"black",COLOR_BLACK},
-			{"red", COLOR_RED},
-			{"green", COLOR_GREEN},
-			{"yellow", COLOR_YELLOW},
-			{"blue", COLOR_BLUE},
-			{"magenta", COLOR_MAGENTA},
-			{"cyan", COLOR_CYAN},
-			{"white", COLOR_WHITE}
-		};
+		 
 		#define s(X) std::string(X)
 		#define int_st(X) std::to_string(X)
+		// Ugly bodge for err_msgs.at("theme");
+		DefTheme listener;
+		std::string print_themes()
+		{
+			std::string ret;
+			std::vector<std::string> names = listener.get_themenames();
+			for (int i = 0; i<names.size(); i++)
+			{
+				ret += "\t\t" + names[i] + "\n";
+			}
+			return ret;
+		}
 		std::unordered_map<std::string, std::string> err_msgs =
 		{
 			{"file",
@@ -58,48 +70,88 @@ class Args
 				+ "\t\tExample: '" + C_GREEN_U + "vain --limit 1" + C_OFF + "'\n"
 				+ "\t\tDefault: " + int_st(limit) + "\n"
 			},
-			{"color",
-				s("Usage of -F/--foreground, -B/--background and -C/--cursor:\n")
-				+ "\tChange the foreground, background or cursor color with one of eight predefined color names\n"
-				+ "\t\tExample: '" + C_GREEN_U + "vain -F red -B white" + C_OFF + "'\n"
-				+ "\t\tAll accepted color names:\n"
-				+ "\t\t\tblack\n"
-				+ "\t\t\tred\n"
-				+ "\t\t\tgreen\n"
-				+ "\t\t\tyellow\n"
-				+ "\t\t\tblue\n"
-				+ "\t\t\tmagenta\n"
-				+ "\t\t\tcyan\n"
-				+ "\t\t\twhite\n"
-				+ "\t\tDefault: green foreground, black background, cursor adapts to foreground color\n"
+			{"cursor",
+				s("Usage of -C/--cursor:\n")
+				+ "\tSet the cursor color through either a theme name/id, a RGB value or a HEX value;\n"
+				+ "\tExamples:\n"
+				+ "\t\t- Theme name/id: '" + C_GREEN_U + "vain -C 1" 
+					+ C_OFF + "' sets the cursor color to the predefined cursor color of the theme with ID 1\n"
+				+ "\t\t- RGB value: '" + C_GREEN_U + "vain -C \"85, 255, 0\"" 
+					+ C_OFF + "' sets the cursor color to a bright green\n"
+				+ "\t\t- HEX value: '" + C_GREEN_U + "vain -C \"#3ebfb3\"" 
+					+ C_OFF + "' sets the cursor color to a teal tone\n"
+				+ "\tDefault: Cursor color is defined by the theme you chose\n"
+			},
+			{"theme",
+				s("Usage of -T/--theme:\n")
+				+ "\tChange the theme to one of the predefined ones;\n"
+				+ "\tThere are currently " 
+					+ int_st(listener.get_themenames().size())
+					+ " themes available:\n"
+				+ print_themes()
+				+ "\tBIG THANKS to https://github.com/st3w/neo for some "
+					+ "theme colors which I shamelessly stole from their project\n"
+				+ "\tExamples:\n"
+				+ "\t\tBy name:  '" + C_GREEN_U + "vain --theme " 
+					+ listener.get_themenames()[1] + C_OFF + "'\n"
+				+ "\t\tBy index: '" + C_GREEN_U + "vain --theme 1" + C_OFF + "'\n"
+				+ "\t\t\t(The index starts at 0, so 1 is the " 
+					+ listener.get_themenames()[1] + " theme)\n"
+				+ "\tDefault: Green theme with index 0\n"
+			},
+			{"custom_theme",
+				s("Usage of -F/--colorfile:\n")
+				+ "\t(This entry is a stub and will be extended in the future)\n"
 			}
-			
+			// TODO: Add entries for every flag
 		};
-		 
-		// Color settings
-		int fg_color = COLOR_GREEN, bg_color = COLOR_BLACK; 		 
-		bool show_cursor = true;
-		/* Cursor Color
-		 * -1 gets handled by get_cur() as fg_color,
-		 *  so that it's just the foreground color unless
-		 *  the user specifies something else
-		 */
-		int cur_color = -1;
-		 
 		int process_file(int &i, int argc, char * argv[]);
 		int process_limit(int &i, int argc, char * argv[]);
 		 
-		enum ColorSetters { FG, BG, CUR };
-		int process_color(int &i, int argc, char * argv[], ColorSetters type);
+		int process_theme(int &i, int argc, char * argv[]);
+		/* Return values: Returns 0 if everything is OK,
+		 * or the line number in which an error was encountered,
+		 * starting at 1; Returns -1 if the file could not be opened
+		 */
+		int process_custom_theme(int &i, int argc, char * argv[]);
+		int process_background(int &i, int argc, char * argv[]);
+		int process_cursor(int &i, int argc, char * argv[]);
+
+		std::vector<unsigned char> unify_color_input(std::string input);
+
+
+		// Color settings
+		int themeid = 0;
+		/* The background color is
+		 * completely independent from
+		 * the set theme; It is used by args::makepairs()
+		 * to set the correct background color for every pair */
+		// Uses rgb values from range 0 to 1000
+		std::vector<int> bg_col = {0, 0, 0};
+		/* if this is false, only color 0 from a theme will be used */
+		bool multicol = true;
+		/* Custom theme that is set if the user gives a valid colorfile */
+		std::vector<Color> custom_theme = {};
+		/* Custom cursor scheme set by the user */
+		std::vector<unsigned char> custom_cur = {};
+		bool show_cursor = true;
+		 
+
 		 
 	public:
 		void process(int argc, char* argv[]);
+		void makepairs();
+		 
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
-		int get_fg() { return fg_color; }
-		int get_bg() { return bg_color; }
-		bool get_show_cursor() { return show_cursor; }
-		int get_cur(); // Because of more complexity located in args.cpp
-		std::string colid_to_string(int colid);
 		bool get_dry() { return dry; }
+		 
+		int get_themeid() { return themeid; }
+		/* Returns either default theme or custom theme */
+		std::vector<Color> get_theme();
+		bool get_show_cursor() { return show_cursor; }
+		/* Returns curcol of theme_id when custom_cur is not set,
+		 * custom_cur content if otherwise
+		 */
+		std::vector<unsigned char> get_curtheme();
 };

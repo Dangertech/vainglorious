@@ -1,5 +1,7 @@
 #include <string>
 #include <ncurses.h>
+#include <random>
+#include <iostream>
 #include "render.h"
 #include "file.h"
 #include "util.h"
@@ -9,12 +11,85 @@ void Render::move_up()
 	grid.erase(grid.begin());
 }
 
-void Render::add_line(std::string line)
+void Render::add_char(char c, int col_id)
 {
-	grid.push_back(std::vector<char>());
+	if (grid.size() == 0)
+		grid.push_back(std::vector<Cell>()); // Failsafe
+	 
+	if (c != '\n')
+		grid[grid.size()-1].push_back(Cell(c, col_id));
+	else
+	{
+		grid.push_back(std::vector<Cell>());
+	}
+	/* Actually, through this, there is
+	 * ALWAYS AN EMPTY NEW LINE at the end of the
+	 * text when a newline is cast from add_line(), for example
+	 */
+}
+
+void Render::change_cur_color(std::vector<unsigned char> rgb)
+{
+	printf("\e]12;#%.2x%.2x%.2x\a", rgb[0], rgb[1], rgb[2]);
+}
+
+Color Render::random_col(std::vector<Color> col_data)
+{
+	// Basically our seed without using the time
+	std::random_device rd;
+	std::mt19937 gen(rd());
+
+	// Get weights
+	std::vector<int> weights(col_data.size());
+	// Fill weights with defined weights from probability
+	for (int i = 0; i<col_data.size(); i++)
+		weights[i] = col_data[i].pair_prob.prob;
+
+	std::discrete_distribution<> dist(weights.begin(), weights.end());
+	 
+	/* dist(gen) returns a color index according to the weights
+	 * The whole chosen color is returned
+	 */
+	return col_data[dist(gen)]; 
+}
+
+void Render::add_line(std::string line, std::vector<Color> col_data)
+{
+	/* To circumvent multiple difficulties with
+	 * the new line problem, this function just doesn't
+	 * finish a line at the end but instead finishes it at
+	 * the beginning of it's cast
+	 */
+	if (grid.size() > 0) // Failsafe
+		if (grid[grid.size()-1].size() > 0)
+			add_char('\n', 1);
 	for (int i = 0; i<line.size(); i++)
 	{
-		grid[grid.size()-1].push_back(line[i]);
+		Color col;
+		// Decide Color pair
+		if (col_data.size() > 1)
+		{
+			// Generate colpair from pair_data
+			col = random_col(col_data);
+		}
+		else if (col_data.size() == 1)
+			col = col_data[0]; // Just save the resources
+		
+		// Get a random integer between second and first of app_length
+		Util util;
+		int length = util.random_int(col.pair_prob.app_length.first, 
+				col.pair_prob.app_length.second);
+		for (int app_count = 0; app_count < length; app_count++)
+		{
+			add_char(line[i], col.pair_prob.pair_id);
+			if (app_count < length-1)
+			{
+				if (i+1 < line.size())
+					i++;
+				else
+					break; // Break loop when line is finished now
+			}
+		}
 	}
 }
 
@@ -32,15 +107,17 @@ void Render::render_grid()
 	{
 		for (int j = 0; j<grid[i].size(); j++)
 		{
-			printw("%c", grid[i][j]);
+			if (getcurx(stdscr) > getmaxx(stdscr)-2)
+				break; // Stop rendering
+			attron(COLOR_PAIR(grid[i][j].col_id));
+			printw("%c", grid[i][j].c);
+			attroff(COLOR_PAIR(grid[i][j].col_id));
 			lastxpos = getcurx(stdscr);
 		}
 		printw("\n");
 	}
 	// Prepare y pos for cursor
-	int lastypos = getcury(stdscr);
-	if (lastypos != getmaxy(stdscr)-1)
-		lastypos--;
+	int lastypos = grid.size()-1;
 	move(lastypos, lastxpos); // move cursor
 }
 
@@ -58,11 +135,11 @@ void Render::cleardraw()
 
 int Render::run(Args my_args, File my_scroll)
 {
+	std::vector<Color> theme = my_args.get_theme();
 	/* Set cursor color
 	 * This has to be done before initscr() is called
 	 */
-	std::string ccolname = my_args.colid_to_string(my_args.get_cur());
-	printf("\e]12;%s\a", ccolname.c_str());
+	change_cur_color(my_args.get_curtheme());
 	 
 	initscr();
 	noecho(); // Turn off printing of pressed character
@@ -72,9 +149,7 @@ int Render::run(Args my_args, File my_scroll)
 		curs_set(0);
 	 
 	// Init colors
-	init_pair(1, my_args.get_fg(), my_args.get_bg());
-	bkgd(COLOR_PAIR(1));
-	attron(COLOR_PAIR(1));
+	my_args.makepairs();
 	/* Draw everything once to set the background everywhere
 	 * bkgd() or wbkgd() alone leaves a column black at the right 
 	 * side of my terminal for some reason
@@ -100,7 +175,7 @@ int Render::run(Args my_args, File my_scroll)
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		add_line(myblock[blockpos].c_str());
+		add_line(myblock[blockpos].c_str(), theme);
 		render_grid();
 		blockpos++;
 		// Start moving up when the text has advanced far enough
@@ -110,8 +185,8 @@ int Render::run(Args my_args, File my_scroll)
 		if (grid.size() > scrlimit)
 			move_up();
 	}
-	attroff(COLOR_PAIR(1));
 	endwin();
+	// Reset cursor color
 	printf("\e]12;white\a");
 	return 0;
 }

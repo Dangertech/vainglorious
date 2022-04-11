@@ -9,14 +9,28 @@ class Render
 		/* Driver grid that characters are put into
 		 * and that is rendered every frame, offset by one
 		 */
-		std::vector<std::vector<char>> grid;
-		void move_up();
-		void add_line(std::string line);
+		struct Cell
+		{
+			char c;
+			int col_id;
+			Cell(char my_c, int my_col_id)
+			{
+				c = my_c;
+				col_id = my_col_id;
+			}
+		};
+		std::vector<std::vector<Cell>> grid;
+		 
+		void add_char(char c, int col_id);
 		void render_grid();
+		void move_up();
 
+		void change_cur_color(std::vector<unsigned char> rgb);
+
+		/* Gets a random pair with the defined probabilities */
+		Color random_col(std::vector<Color> );
+		void add_line(std::string line, std::vector<Color> col_data);
 		void cleardraw();
 	public:
 		int run(Args, File);
 };
-
-
