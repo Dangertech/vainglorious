@@ -17,7 +17,17 @@ class Args
 		 * managed by the public process_args()
 		 */
 		std::string file = DEF_FILE;
+		/* Only get arguments and quit before initializing
+		 * the ncurses display
+		 */
 		bool dry = false;
+		/* Should the screen be cleared and redrawn
+		 * from scratch every time it changes?
+		 */
+		bool forcedraw = false;
+		/* How far down from the lower terminal border
+		 * should the text be shown before scrolling up?
+		 */
 		int limit = 4;
 		std::vector<std::string> switches =
 		{
@@ -124,6 +134,7 @@ class Args
 
 
 		// Color settings
+		 
 		int themeid = 0;
 		/* The background color is
 		 * completely independent from
@@ -148,6 +159,7 @@ class Args
 		std::string get_file() { return file; }
 		int get_limit() { return limit; }
 		bool get_dry() { return dry; }
+		bool get_forcedraw() { return forcedraw; }
 		 
 		int get_themeid() { return themeid; }
 		/* Returns either default theme or custom theme */

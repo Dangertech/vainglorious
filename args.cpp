@@ -6,6 +6,8 @@
 #include "const.h"
 #include "theme.h"
 
+#define INVERT(X)	X ? X = false : X = true;
+
 void Args::process(int argc, char* argv[])
 {
 	for (int i = 1; i<argc; i++)
@@ -97,16 +99,17 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 14: case 15: // -c, --no-show-cursor
-				show_cursor = false;
+				INVERT(show_cursor);
 				break;
 			case 16: // --spacing
 				break;
 			case 17: // --forcedraw
+				INVERT(forcedraw);
 				break;
 			case 18: // --until
 				break;
 			case 20: // --dry
-				dry = true;
+				INVERT(dry);
 				break;
 			default:
 				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;

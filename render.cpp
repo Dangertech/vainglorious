@@ -176,6 +176,9 @@ int Render::run(Args my_args, File my_scroll)
 			break;
 		 
 		add_line(myblock[blockpos].c_str(), theme);
+		// Clear the screen every time something happens
+		if (my_args.get_forcedraw())
+			cleardraw();
 		render_grid();
 		blockpos++;
 		// Start moving up when the text has advanced far enough
