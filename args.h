@@ -37,6 +37,9 @@ class Args
 			"--cursor",
 			"-c",
 			"--no-show-cursor",
+			"--spacing",
+			"--forcedraw",
+			"--until",
 			"--debug",
 			"--dry",
 			"--help"

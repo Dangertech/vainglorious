@@ -14,28 +14,28 @@ void Args::process(int argc, char* argv[])
 		int match = util.veccmp<std::string>(std::string(argv[i]), switches);
 		switch (match)
 		{
-			case 0: case 1:
+			case 0: case 1: // -f, --scrollfile
 				if (process_file(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("file");
 					exit(1);
 				}
 				break;
-			case 4: case 5:
+			case 4: case 5: // -l, --limit
 				if (process_limit(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("limit");
 					exit(1);
 				}
 				break;
-			case 6: case 7:
+			case 6: case 7: // -T, --theme
 				if (process_theme(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("theme");
 					exit(1);
 				}
 				break;
-			case 8: case 9:
+			case 8: case 9: // -F, --colorfile
 			{
 				int ret = process_custom_theme(i, argc, argv);
 				if (ret == -1)
@@ -55,13 +55,13 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			}
-			case 10: case 11:
+			case 10: case 11: // -B, --background
 				if (process_background(i, argc, argv) == ERROR)
 				{
 					exit(1);
 				}
 				break;
-			case 12: case 13:
+			case 12: case 13: // -C, --cursor
 				switch(process_cursor(i, argc, argv))
 				{
 					case 0:
@@ -96,14 +96,20 @@ void Args::process(int argc, char* argv[])
 						break;
 				}
 				break;
-			case 14: case 15:
+			case 14: case 15: // -c, --no-show-cursor
 				show_cursor = false;
 				break;
-			case 17:
+			case 16: // --spacing
+				break;
+			case 17: // --forcedraw
+				break;
+			case 18: // --until
+				break;
+			case 20: // --dry
 				dry = true;
 				break;
 			default:
-				std::cout << "Invalid argument!" << std::endl;
+				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;
 				break;
 		}
 	}
