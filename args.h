@@ -29,6 +29,10 @@ class Args
 		 * should the text be shown before scrolling up?
 		 */
 		int limit = 4;
+		/* How many lines should be left empty
+		 * between individual blocks
+		 */
+		int spacing = 1;
 		std::vector<std::string> switches =
 		{
 			"-f",
@@ -115,6 +119,13 @@ class Args
 			{"custom_theme",
 				s("Usage of -F/--colorfile:\n")
 				+ "\t(This entry is a stub and will be extended in the future)\n"
+			},
+			{"spacing",
+				s("Usage of --spacing:\n")
+				+ "\tChange the amount of empty lines between individual blocks\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --spacing 3" + C_OFF 
+					+ "' produces three empty lines after each block\n"
+				+ "\tDefault: " + int_st(spacing) + "\n"
 			}
 			// TODO: Add entries for every flag
 		};
@@ -131,6 +142,8 @@ class Args
 		int process_cursor(int &i, int argc, char * argv[]);
 
 		std::vector<unsigned char> unify_color_input(std::string input);
+
+		int process_spacing(int &i, int argc, char * argv[]);
 
 
 		// Color settings
@@ -160,6 +173,7 @@ class Args
 		int get_limit() { return limit; }
 		bool get_dry() { return dry; }
 		bool get_forcedraw() { return forcedraw; }
+		int get_spacing() { return spacing; }
 		 
 		int get_themeid() { return themeid; }
 		/* Returns either default theme or custom theme */

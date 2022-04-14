@@ -131,6 +131,7 @@ void Render::cleardraw()
 			printw(" ");
 		}
 	}
+	move(0, 0);
 }
 
 int Render::run(Args my_args, File my_scroll)
@@ -159,6 +160,13 @@ int Render::run(Args my_args, File my_scroll)
 	int ch;
 	std::vector<std::string> myblock;
 	int blockpos = 0;
+	/* If to_space is 0, everything
+	 * runs normally, lines of blocks
+	 * get added; If it's not 0, an empty line
+	 * is inserted instead and to_space is decreased
+	 * by one
+	 */
+	int to_space = 0;
 	 
 	while (1)
 	{
@@ -169,24 +177,36 @@ int Render::run(Args my_args, File my_scroll)
 		{
 			myblock = my_scroll.rblock();
 			blockpos = 0;
+			// "Query" the spacing
+			to_space = my_args.get_spacing();
 		}
 		 
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
 		 
-		add_line(myblock[blockpos].c_str(), theme);
+		if (to_space == 0)
+		{
+			add_line(myblock[blockpos].c_str(), theme);
+			blockpos++;
+		}
+		else
+			add_line(" ", theme);
+		 
 		// Clear the screen every time something happens
 		if (my_args.get_forcedraw())
 			cleardraw();
 		render_grid();
-		blockpos++;
+		 
 		// Start moving up when the text has advanced far enough
 		int scrlimit = getmaxy(stdscr)-my_args.get_limit();
 		if (scrlimit < 0)
 			scrlimit = 0;
 		if (grid.size() > scrlimit)
 			move_up();
+		 
+		if (to_space > 0)
+			to_space--;
 	}
 	endwin();
 	// Reset cursor color

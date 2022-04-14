@@ -102,6 +102,11 @@ void Args::process(int argc, char* argv[])
 				INVERT(show_cursor);
 				break;
 			case 16: // --spacing
+				if (process_spacing(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("spacing");
+					exit(1);
+				}
 				break;
 			case 17: // --forcedraw
 				INVERT(forcedraw);
@@ -410,6 +415,16 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 		}
 	}
 	throw ERROR;
+}
+
+int Args::process_spacing(int &i, int argc, char * argv[])
+{
+	i++;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	spacing = atoi(argv[i]);
+	return 0;
 }
 
 std::vector<Color> Args::get_theme()
