@@ -112,6 +112,11 @@ void Args::process(int argc, char* argv[])
 				INVERT(forcedraw);
 				break;
 			case 18: // --until
+				if (process_until(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("until");
+					exit(1);
+				}
 				break;
 			case 20: // --dry
 				INVERT(dry);
@@ -415,6 +420,16 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 		}
 	}
 	throw ERROR;
+}
+
+int Args::process_until(int &i, int argc, char* argv[])
+{
+	i++;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	read_until = atoi(argv[i]);
+	return 0;
 }
 
 int Args::process_spacing(int &i, int argc, char * argv[])

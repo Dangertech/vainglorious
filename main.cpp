@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 	// Crunch through scrollfile
 	std::cout << "Target Scroll File Is: " << args.get_file() << std::endl;
 	std::cout << "Crunching through Scroll file...";
-	if (scrollfile.crunch_file(args.get_file()) == ERROR)
+	if (scrollfile.crunch_file(args) == ERROR)
 	{
 		std::cout << "Error opening scroll! Please check file ownership!" << std::endl;
 		return 1;

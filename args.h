@@ -17,6 +17,10 @@ class Args
 		 * managed by the public process_args()
 		 */
 		std::string file = DEF_FILE;
+		/* Until where should the scroll file
+		 * be read? -1 reads until the end
+		 */
+		int read_until = -1;
 		/* Only get arguments and quit before initializing
 		 * the ncurses display
 		 */
@@ -126,6 +130,17 @@ class Args
 				+ "\t\tExample: '" + C_GREEN_U + "vain --spacing 3" + C_OFF 
 					+ "' produces three empty lines after each block\n"
 				+ "\tDefault: " + int_st(spacing) + "\n"
+			},
+			{"until",
+				s("Usage of --until:\n")
+				+ "\tDefine until where the scroll file should be read\n"
+				+ "\tThis can be used to avoid long wait times or Out-Of-Memory "
+					+ "situations when reading from very large files\n"
+				+ "\tNote that vainglorious does NOT read until the end of the "
+					+ "current block, it does a hard stop as soon as the given line is reached.\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --until 180 --scrollfile scroll.txt" + C_OFF
+					+ "' reads until line 180 from the file \"scroll.txt\"\n"
+				+ "\tDefault: The scrollfile is read until EOF\n"
 			}
 			// TODO: Add entries for every flag
 		};
@@ -144,6 +159,7 @@ class Args
 		std::vector<unsigned char> unify_color_input(std::string input);
 
 		int process_spacing(int &i, int argc, char * argv[]);
+		int process_until(int &i, int argc, char * argv[]);
 
 
 		// Color settings
@@ -174,6 +190,7 @@ class Args
 		bool get_dry() { return dry; }
 		bool get_forcedraw() { return forcedraw; }
 		int get_spacing() { return spacing; }
+		int get_read_until() { return read_until; }
 		 
 		int get_themeid() { return themeid; }
 		/* Returns either default theme or custom theme */

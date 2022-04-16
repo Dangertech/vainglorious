@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "args.h"
 
 class File
 {
@@ -12,7 +13,7 @@ class File
 		int roff = 0; 
 		std::vector<std::vector<std::string>> blocks;
 	public:
-		int crunch_file(std::string scroll); // Parse scroll and fill blocks
+		int crunch_file(Args my_args); // Parse scroll and fill blocks
 		std::vector<std::string> rblock(); // Get a random block from the list
 		 
 		std::vector<std::vector<std::string>> get_blocks() { return blocks; }
