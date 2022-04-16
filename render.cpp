@@ -167,6 +167,8 @@ int Render::run(Args my_args, File my_scroll)
 	 * by one
 	 */
 	int to_space = 0;
+	/* To avoid spacing on the first block to appear */
+	bool first_space = true;
 	 
 	while (1)
 	{
@@ -178,7 +180,10 @@ int Render::run(Args my_args, File my_scroll)
 			myblock = my_scroll.rblock();
 			blockpos = 0;
 			// "Query" the spacing
-			to_space = my_args.get_spacing();
+			if (first_space)
+				first_space = false;
+			else
+				to_space = my_args.get_spacing();
 		}
 		 
 		ch = getch();
