@@ -119,10 +119,25 @@ void Args::process(int argc, char* argv[])
 				INVERT(show_cursor);
 				break;
 			case 17: case 18: // -b, --movement-behaviour
+				if (process_behaviour(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
 				break;
 			case 19: case 20: // -s, --movement-style
+				if (process_style(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
 				break;
 			case 21: case 22: // -S, --movement-speed
+				if (process_style(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
 				break;
 			case 23: // --debug (UNUSED)
 				break;
@@ -474,4 +489,18 @@ std::vector<unsigned char> Args::get_curtheme()
 		return thm.get_curcol(themeid);
 	else
 		return custom_cur;
+}
+
+
+int Args::process_behaviour(int &i, int argc, char* argv[])
+{
+	return 0;
+}
+int Args::process_style(int &i, int argc, char* argv[])
+{
+	return 0;
+}
+int Args::process_speed(int &i, int argc, char* argv[])
+{
+	return 0;
 }

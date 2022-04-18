@@ -14,31 +14,58 @@ class Args
 {
 	private:
 
-		/* General Argument management
-		 * Processers for the flags are
-		 * managed by the public process_args()
-		 */
+		// Properties (accessible through public functions)
+		 
+		/* File to read blocks from */
 		std::string file = DEF_FILE;
 		/* Until where should the scroll file
 		 * be read? -1 reads until the end
 		 */
 		int read_until = -1;
-		/* Only get arguments and quit before initializing
-		 * the ncurses display
+		/* How far down from the lower terminal border
+		 * should the text be shown before scrolling up?
 		 */
-		bool dry = false;
+		int spacing = 1;
+		/* How many lines should be left empty
+		 * between individual blocks
+		 */
+		int limit = 4;
 		/* Should the screen be cleared and redrawn
 		 * from scratch every time it changes?
 		 */
 		bool forcedraw = false;
-		/* How far down from the lower terminal border
-		 * should the text be shown before scrolling up?
+
+		/* Only get arguments and quit before initializing
+		 * the ncurses display
 		 */
-		int limit = 4;
-		/* How many lines should be left empty
-		 * between individual blocks
+		bool dry = false;
+
+		// Color settings
+		int themeid = 0;
+		/* The background color is
+		 * completely independent from
+		 * the set theme; It is used by args::makepairs()
+		 * to set the correct background color for every pair */
+		// Uses rgb values from range 0 to 1000
+		std::vector<int> bg_col = {0, 0, 0};
+		/* if this is false, only color 0 from a theme will be used */
+		bool multicol = true;
+		/* Custom theme that is set if the user gives a valid colorfile */
+		std::vector<Color> custom_theme = {};
+		/* Custom cursor scheme set by the user */
+		std::vector<unsigned char> custom_cur = {};
+		bool show_cursor = true;
+
+		// Movement style
+		MovementBehaviour behaviour = INPUT;
+		ProgressStyle style = LINE;
+		int speed = 1;
+		/* By default, the user can advance the
+		 * text by 1 line by pressing a button
 		 */
-		int spacing = 1;
+
+		// Input management
+		 
 		std::vector<std::string> switches =
 		{
 			"-f",
@@ -77,6 +104,32 @@ class Args
 			"-h",
 			"--help"
 		};
+
+		// Flag processors 
+		 
+		int process_file(int &i, int argc, char * argv[]);
+		int process_until(int &i, int argc, char * argv[]);
+		int process_limit(int &i, int argc, char * argv[]);
+		int process_spacing(int &i, int argc, char * argv[]);
+		 
+		int process_theme(int &i, int argc, char * argv[]);
+		/* Return values: Returns 0 if everything is OK,
+		 * or the line number in which an error was encountered,
+		 * starting at 1; Returns -1 if the file could not be opened
+		 */
+		int process_custom_theme(int &i, int argc, char * argv[]);
+		int process_background(int &i, int argc, char * argv[]);
+		int process_cursor(int &i, int argc, char * argv[]);
+
+		std::vector<unsigned char> unify_color_input(std::string input);
+
+		int process_behaviour(int &i, int argc, char * argv[]);
+		int process_style(int &i, int argc, char * argv[]);
+		int process_speed(int &i, int argc, char * argv[]);
+
+
+
+		// Error/Help messages
 		 
 		#define s(X) std::string(X)
 		#define int_st(X) std::to_string(X)
@@ -159,52 +212,6 @@ class Args
 			}
 			// TODO: Add entries for every flag
 		};
-		int process_file(int &i, int argc, char * argv[]);
-		int process_limit(int &i, int argc, char * argv[]);
-		 
-		int process_theme(int &i, int argc, char * argv[]);
-		/* Return values: Returns 0 if everything is OK,
-		 * or the line number in which an error was encountered,
-		 * starting at 1; Returns -1 if the file could not be opened
-		 */
-		int process_custom_theme(int &i, int argc, char * argv[]);
-		int process_background(int &i, int argc, char * argv[]);
-		int process_cursor(int &i, int argc, char * argv[]);
-
-		std::vector<unsigned char> unify_color_input(std::string input);
-
-		int process_spacing(int &i, int argc, char * argv[]);
-		int process_until(int &i, int argc, char * argv[]);
-
-
-		// Color settings
-		 
-		int themeid = 0;
-		/* The background color is
-		 * completely independent from
-		 * the set theme; It is used by args::makepairs()
-		 * to set the correct background color for every pair */
-		// Uses rgb values from range 0 to 1000
-		std::vector<int> bg_col = {0, 0, 0};
-		/* if this is false, only color 0 from a theme will be used */
-		bool multicol = true;
-		/* Custom theme that is set if the user gives a valid colorfile */
-		std::vector<Color> custom_theme = {};
-		/* Custom cursor scheme set by the user */
-		std::vector<unsigned char> custom_cur = {};
-		bool show_cursor = true;
-
-		// Movement style
-		MovementBehaviour behaviour = INPUT;
-		ProgressStyle style = LINE;
-		int speed = 1;
-		/* By default, the user can advance the
-		 * text by 1 line by pressing a button
-		 */
-		
-		 
-
-		 
 	public:
 		void process(int argc, char* argv[]);
 		void makepairs();
