@@ -217,11 +217,11 @@ class Args
 		void makepairs();
 		 
 		std::string get_file() { return file; }
-		int get_limit() { return limit; }
-		bool get_dry() { return dry; }
-		bool get_forcedraw() { return forcedraw; }
-		int get_spacing() { return spacing; }
 		int get_read_until() { return read_until; }
+		 
+		int get_limit() { return limit; }
+		int get_spacing() { return spacing; }
+		bool get_forcedraw() { return forcedraw; }
 		 
 		int get_themeid() { return themeid; }
 		/* Returns either default theme or custom theme */
@@ -231,4 +231,10 @@ class Args
 		 * custom_cur content if otherwise
 		 */
 		std::vector<unsigned char> get_curtheme();
+
+		MovementBehaviour get_behaviour() { return behaviour; }
+		ProgressStyle get_style() { return style; }
+		int get_speed() { return speed; }
+		 
+		bool get_dry() { return dry; }
 };

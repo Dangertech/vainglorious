@@ -133,7 +133,7 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			case 21: case 22: // -S, --movement-speed
-				if (process_style(i, argc, argv) == ERROR)
+				if (process_speed(i, argc, argv) == ERROR)
 				{
 					std::cout << "Argument wrongly used!" << std::endl;
 					exit(1);
@@ -173,28 +173,23 @@ void Args::makepairs()
 
 int Args::process_file(int &i, int argc, char* argv[])
 {
-	if (i < argc-1)
-	{
-		i++;
-		file = argv[i];
-	}
-	else
+	i++;
+	if (i > argc-1)
 		return ERROR;
+	file = argv[i];
 	return 0;
 }
 
 int Args::process_limit(int &i, int argc, char* argv[])
 {
-	if (i < argc-1)
-	{
-		i++;
-		if (atoi(argv[i]) < 1)
-			limit = 1;
-		else
-			limit = atoi(argv[i]);
-	}
-	else
+
+	i++;
+	if (i > argc-1)
 		return ERROR;
+	if (atoi(argv[i]) < 1)
+		limit = 1;
+	else
+		limit = atoi(argv[i]);
 	return 0;
 }
 
@@ -203,7 +198,6 @@ int Args::process_theme(int &i, int argc, char* argv[])
 	i++;
 	if (i > argc-1)
 		return ERROR;
-	
 	Util util;
 	DefTheme thm;
 	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), 
@@ -229,6 +223,8 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 {
 	// Get colorfile name
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	std::string name = std::string(argv[i]);
 	std::ifstream cfile(name);
 	if (!cfile.is_open())
@@ -329,7 +325,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 int Args::process_background(int &i, int argc, char* argv[])
 {
 	i++;
-	if (i  > argc-1)
+	if (i > argc-1)
 		return ERROR;
 
 	std::string input = std::string(argv[i]);
@@ -352,6 +348,8 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 {
 	 
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	std::string input = std::string(argv[i]);
 	std::vector<unsigned char> ret;
 	try
@@ -450,6 +448,8 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 int Args::process_until(int &i, int argc, char* argv[])
 {
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	Util util;
 	if (!util.is_number(std::string(argv[i])))
 		return ERROR;
@@ -460,6 +460,8 @@ int Args::process_until(int &i, int argc, char* argv[])
 int Args::process_spacing(int &i, int argc, char * argv[])
 {
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	Util util;
 	if (!util.is_number(std::string(argv[i])))
 		return ERROR;
@@ -494,13 +496,51 @@ std::vector<unsigned char> Args::get_curtheme()
 
 int Args::process_behaviour(int &i, int argc, char* argv[])
 {
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"input", "auto"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: behaviour = INPUT; break;
+		case 1: behaviour = AUTO; break;
+	}
 	return 0;
 }
 int Args::process_style(int &i, int argc, char* argv[])
 {
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"line", "word", "character", "block"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: style = LINE; break;
+		case 1: style = WORD; break;
+		case 2: style = CHARACTER; break;
+		case 3: style = BLOCK; break;
+	}
 	return 0;
 }
 int Args::process_speed(int &i, int argc, char* argv[])
 {
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+	{
+		return ERROR;
+	}
+	int ipt = atoi(argv[i]);
+	if (ipt < 0)
+		return ERROR;
+	speed = ipt;
 	return 0;
 }
