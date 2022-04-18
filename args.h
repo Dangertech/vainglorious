@@ -6,6 +6,8 @@
 #include "theme.h"
 #include "const.h"
 
+enum MovementBehaviour { INPUT, AUTO };
+enum ProgressStyle { LINE, WORD, CHARACTER, BLOCK };
 
 
 class Args
@@ -41,10 +43,15 @@ class Args
 		{
 			"-f",
 			"--scrollfile",
-			"-s",
-			"--scroll-mode",
+			"--until",
+
+			// General properties
 			"-l",
 			"--limit",
+			"--spacing",
+			"--forcedraw",
+			 
+			// Color related
 			"-T",
 			"--theme",
 			"-F",
@@ -55,11 +62,19 @@ class Args
 			"--cursor",
 			"-c",
 			"--no-show-cursor",
-			"--spacing",
-			"--forcedraw",
-			"--until",
+
+			// Input related
+			"-b",
+			"--movement-behaviour",
+			"-s",
+			"--movement-style",
+			"-S",
+			"--movement-speed",
+			 
+			// Utilities
 			"--debug",
 			"--dry",
+			"-h",
 			"--help"
 		};
 		 
@@ -178,6 +193,15 @@ class Args
 		/* Custom cursor scheme set by the user */
 		std::vector<unsigned char> custom_cur = {};
 		bool show_cursor = true;
+
+		// Movement style
+		MovementBehaviour behaviour = INPUT;
+		ProgressStyle style = LINE;
+		int speed = 1;
+		/* By default, the user can advance the
+		 * text by 1 line by pressing a button
+		 */
+		
 		 
 
 		 

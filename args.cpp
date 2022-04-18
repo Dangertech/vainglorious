@@ -23,21 +23,38 @@ void Args::process(int argc, char* argv[])
 					exit(1);
 				}
 				break;
-			case 4: case 5: // -l, --limit
+			case 2: // --until
+				if (process_until(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("until");
+					exit(1);
+				}
+				break;
+			case 3: case 4: // -l, --limit
 				if (process_limit(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("limit");
 					exit(1);
 				}
 				break;
-			case 6: case 7: // -T, --theme
+			case 5: // --spacing
+				if (process_spacing(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("spacing");
+					exit(1);
+				}
+				break;
+			case 6: // --forcedraw
+				INVERT(forcedraw);
+				break;
+			case 7: case 8: // -T, --theme
 				if (process_theme(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("theme");
 					exit(1);
 				}
 				break;
-			case 8: case 9: // -F, --colorfile
+			case 9: case 10: // -F, --colorfile
 			{
 				int ret = process_custom_theme(i, argc, argv);
 				if (ret == -1)
@@ -57,13 +74,13 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			}
-			case 10: case 11: // -B, --background
+			case 11: case 12: // -B, --background
 				if (process_background(i, argc, argv) == ERROR)
 				{
 					exit(1);
 				}
 				break;
-			case 12: case 13: // -C, --cursor
+			case 13: case 14: // -C, --cursor
 				switch(process_cursor(i, argc, argv))
 				{
 					case 0:
@@ -98,28 +115,21 @@ void Args::process(int argc, char* argv[])
 						break;
 				}
 				break;
-			case 14: case 15: // -c, --no-show-cursor
+			case 15: case 16: // -c, --no-show-cursor
 				INVERT(show_cursor);
 				break;
-			case 16: // --spacing
-				if (process_spacing(i, argc, argv) == ERROR)
-				{
-					std::cout << err_msgs.at("spacing");
-					exit(1);
-				}
+			case 17: case 18: // -b, --movement-behaviour
 				break;
-			case 17: // --forcedraw
-				INVERT(forcedraw);
+			case 19: case 20: // -s, --movement-style
 				break;
-			case 18: // --until
-				if (process_until(i, argc, argv) == ERROR)
-				{
-					std::cout << err_msgs.at("until");
-					exit(1);
-				}
+			case 21: case 22: // -S, --movement-speed
 				break;
-			case 20: // --dry
+			case 23: // --debug (UNUSED)
+				break;
+			case 24: // --dry
 				INVERT(dry);
+				break;
+			case 25: case 26: // -h, --help
 				break;
 			default:
 				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;
