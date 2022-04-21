@@ -11,13 +11,13 @@ void Render::move_up()
 	grid.erase(grid.begin());
 }
 
-void Render::add_char(char c, int col_id)
+void Render::add_char(char c, int c_pair)
 {
 	if (grid.size() == 0)
 		grid.push_back(std::vector<Cell>()); // Failsafe
-	 
+	
 	if (c != '\n')
-		grid[grid.size()-1].push_back(Cell(c, col_id));
+		grid[grid.size()-1].push_back(Cell(c, c_pair));
 	else
 	{
 		grid.push_back(std::vector<Cell>());
@@ -38,13 +38,13 @@ Color Render::random_col(std::vector<Color> col_data)
 	// Basically our seed without using the time
 	std::random_device rd;
 	std::mt19937 gen(rd());
-
+	
 	// Get weights
 	std::vector<int> weights(col_data.size());
 	// Fill weights with defined weights from probability
 	for (int i = 0; i<col_data.size(); i++)
 		weights[i] = col_data[i].pair_prob.prob;
-
+	
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
 	 
 	/* dist(gen) returns a color index according to the weights
@@ -108,7 +108,7 @@ void Render::render_grid()
 		for (int j = 0; j<grid[i].size(); j++)
 		{
 			if (getcurx(stdscr) > getmaxx(stdscr)-2)
-				break; // Stop rendering
+				break; // Stop rendering if text is beyond terminal bounds
 			attron(COLOR_PAIR(grid[i][j].col_id));
 			printw("%c", grid[i][j].c);
 			attroff(COLOR_PAIR(grid[i][j].col_id));
@@ -159,7 +159,10 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	int ch;
 	std::vector<std::string> myblock;
-	int blockpos = 0;
+	// Lines into a block
+	int lines = 0;
+	// Characters into a line on a block
+	int chars = 0;
 	/* If to_space is 0, everything
 	 * runs normally, lines of blocks
 	 * get added; If it's not 0, an empty line
@@ -172,13 +175,15 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	while (1)
 	{
+		// Setup blocks
+		
 		/* If everything in the block has been used,
 		 * set new block and reset blockpos
 		 */
-		if (blockpos >= myblock.size())
+		if (lines >= myblock.size())
 		{
 			myblock = my_scroll.rblock();
-			blockpos = 0;
+			lines = 0;
 			// "Query" the spacing
 			if (first_space)
 				first_space = false;
@@ -186,18 +191,47 @@ int Render::run(Args my_args, File my_scroll)
 				to_space = my_args.get_spacing();
 		}
 		 
+		// Wait for continuation
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
 		 
+		 
+		// Place new characters and render them
 		if (to_space == 0)
 		{
-			add_line(myblock[blockpos].c_str(), theme);
-			blockpos++;
+			switch(my_args.get_style())
+			{
+				case LINE:
+					add_line(myblock[lines].c_str(), theme);
+					lines++;
+					break;
+				case WORD:
+					break;
+				case CHARACTER:
+					// Skip tabs (User doesn't have to press keys for them)
+					while (myblock[lines][chars] == '\t')
+					{
+						add_char(myblock[lines][chars], 5); 
+						chars++;
+					}
+					add_char(myblock[lines][chars], 5);
+					chars++;
+					// Break new line
+					if (chars >= myblock[lines].size())
+					{
+						chars = 0;
+						add_char('\n', 1);
+						lines++;
+					}
+					break;
+				case BLOCK:
+					break;
+			}
 		}
 		else
-			add_line(" ", theme);
-		 
+			add_char('\n', 1);
+		
 		// Clear the screen every time something happens
 		if (my_args.get_forcedraw())
 			cleardraw();
@@ -209,6 +243,8 @@ int Render::run(Args my_args, File my_scroll)
 			scrlimit = 0;
 		if (grid.size() > scrlimit)
 			move_up();
+		 
+		// to_space management
 		 
 		if (to_space > 0)
 			to_space--;
