@@ -204,12 +204,42 @@ int Render::run(Args my_args, File my_scroll)
 					lines++;
 					break;
 				case WORD:
+					while (myblock[lines][chars] != ' ')
+					{
+						add_colored_char(myblock[lines][chars], theme);
+						chars++;
+						if (chars >= myblock[lines].size())
+						{
+							chars = 0;
+							add_char('\n', 1);
+							lines++;
+							// Fill up to the next real character
+							if (lines < myblock.size())
+							{
+								while (myblock[lines][chars] == '\t')
+								{
+									add_char(myblock[lines][chars], 1);
+									chars++;
+								}
+							}
+							// Ensure at least one input per line
+							break;
+						}
+					}
+					if (lines < myblock.size())
+					{
+						while(myblock[lines][chars] == ' ')
+						{
+							add_colored_char(myblock[lines][chars], theme);
+							chars++;
+						}
+					}
 					break;
 				case CHARACTER:
 					// Skip tabs (User doesn't have to press keys for them)
 					while (myblock[lines][chars] == '\t')
 					{
-						add_char(myblock[lines][chars], 5); 
+						add_char(myblock[lines][chars], 1); 
 						chars++;
 					}
 					add_colored_char(myblock[lines][chars], theme);

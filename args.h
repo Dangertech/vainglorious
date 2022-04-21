@@ -58,10 +58,10 @@ class Args
 
 		// Movement style
 		MovementBehaviour behaviour = INPUT;
-		ProgressStyle style = LINE;
+		ProgressStyle style = WORD;
 		int speed = 1;
 		/* By default, the user can advance the
-		 * text by 1 line by pressing a button
+		 * text by 1 word per button press
 		 */
 		
 		// Input management
