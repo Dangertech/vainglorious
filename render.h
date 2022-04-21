@@ -20,6 +20,9 @@ class Render
 			}
 		};
 		std::vector<std::vector<Cell>> grid;
+		
+		/* Only used when behaviour is AUTO */
+		float seconds_to_input = 0;
 		 
 		/* Add a char where the color is handled
 		 * automatically

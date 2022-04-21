@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <random>
 #include <iostream>
+#include <chrono>
 #include "render.h"
 #include "file.h"
 #include "util.h"
@@ -135,6 +136,8 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	initscr();
 	noecho(); // Turn off printing of pressed character
+	if (my_args.get_behaviour() == AUTO)
+		nodelay(stdscr, true);
 	start_color(); // Use Colors
 	// Disable cursor in case of -c
 	if (!my_args.get_show_cursor())
@@ -167,9 +170,32 @@ int Render::run(Args my_args, File my_scroll)
 	while (1)
 	{
 		// Wait for continuation
+		// (or don't because nodelay() is set if behaviour is AUTO
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
+		if (my_args.get_behaviour() == AUTO)
+		{
+			bool break_outer = false;
+			using namespace std::chrono;
+			high_resolution_clock::time_point begin = 
+					high_resolution_clock::now();
+			high_resolution_clock::time_point now = 
+					high_resolution_clock::now();
+			while (duration_cast<duration<double>>(now-begin).count() 
+					< my_args.get_auto_delay())
+			{
+				now = high_resolution_clock::now();
+				ch = getch();
+				if (ch == 4) // CTRL-D
+				{
+					break_outer = true;
+					break;
+				}
+			}
+			if (break_outer)
+				break;
+		}
 		 
 		// Place new characters and render them
 		// If there's something to space, enter a new line instead!

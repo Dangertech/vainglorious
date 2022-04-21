@@ -13,7 +13,7 @@ enum ProgressStyle { LINE, WORD, CHARACTER, BLOCK };
 class Args
 {
 	private:
-
+		
 		// Properties (accessible through public functions)
 		 
 		/* File to read blocks from */
@@ -34,12 +34,12 @@ class Args
 		 * from scratch every time it changes?
 		 */
 		bool forcedraw = false;
-
+		
 		/* Only get arguments and quit before initializing
 		 * the ncurses display
 		 */
 		bool dry = false;
-
+		
 		// Color settings
 		int themeid = 0;
 		/* The background color is
@@ -55,7 +55,7 @@ class Args
 		/* Custom cursor scheme set by the user */
 		std::vector<unsigned char> custom_cur = {};
 		bool show_cursor = true;
-
+		
 		// Movement style
 		MovementBehaviour behaviour = INPUT;
 		ProgressStyle style = WORD;
@@ -63,6 +63,7 @@ class Args
 		/* By default, the user can advance the
 		 * text by 1 word per button press
 		 */
+		float auto_delay = 0.01; // Delay in seconds when behaviour is AUTO
 		
 		// Input management
 		 
@@ -97,6 +98,8 @@ class Args
 			"--movement-style",
 			"-S",
 			"--movement-speed",
+			"-d",
+			"--movement-delay",
 			 
 			// Utilities
 			"--debug",
@@ -126,6 +129,7 @@ class Args
 		int process_behaviour(int &i, int argc, char * argv[]);
 		int process_style(int &i, int argc, char * argv[]);
 		int process_speed(int &i, int argc, char * argv[]);
+		int process_auto_delay(int &i, int argc, char * argv[]);
 		
 		
 		
@@ -235,6 +239,7 @@ class Args
 		MovementBehaviour get_behaviour() { return behaviour; }
 		ProgressStyle get_style() { return style; }
 		int get_speed() { return speed; }
+		float get_auto_delay() { return auto_delay; }
 		 
 		bool get_dry() { return dry; }
 };

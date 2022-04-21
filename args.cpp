@@ -139,12 +139,19 @@ void Args::process(int argc, char* argv[])
 					exit(1);
 				}
 				break;
-			case 23: // --debug (UNUSED)
+			case 23: case 24: // -d, --movement-delay
+				if (process_auto_delay(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
 				break;
-			case 24: // --dry
+			case 25: // --debug (UNUSED)
+				break;
+			case 26: // --dry
 				INVERT(dry);
 				break;
-			case 25: case 26: // -h, --help
+			case 27: case 28: // -h, --help
 				break;
 			default:
 				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;
@@ -535,12 +542,24 @@ int Args::process_speed(int &i, int argc, char* argv[])
 		return ERROR;
 	Util util;
 	if (!util.is_number(std::string(argv[i])))
-	{
 		return ERROR;
-	}
 	int ipt = atoi(argv[i]);
 	if (ipt < 0)
 		return ERROR;
 	speed = ipt;
+	return 0;
+}
+int Args::process_auto_delay(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	float ipt = float(atof(argv[i]));
+	if (ipt < 0)
+		return ERROR;
+	auto_delay = ipt;
 	return 0;
 }
