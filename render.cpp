@@ -55,42 +55,28 @@ Color Render::random_col(std::vector<Color> col_data)
 
 void Render::add_line(std::string line, std::vector<Color> col_data)
 {
-	/* To circumvent multiple difficulties with
-	 * the new line problem, this function just doesn't
-	 * finish a line at the end but instead finishes it at
-	 * the beginning of it's cast
-	 */
-	if (grid.size() > 0) // Failsafe
-		if (grid[grid.size()-1].size() > 0)
-			add_char('\n', 1);
+	if (grid.size())
+		add_char('\n', 1);
 	for (int i = 0; i<line.size(); i++)
 	{
-		Color col;
-		// Decide Color pair
-		if (col_data.size() > 1)
-		{
-			// Generate colpair from pair_data
-			col = random_col(col_data);
-		}
-		else if (col_data.size() == 1)
-			col = col_data[0]; // Just save the resources
-		
+		add_colored_char(line[i], col_data);
+	}
+}
+
+void Render::add_colored_char(char c, std::vector<Color> col_data)
+{
+	// No more colors of the same type, assign a
+	// new color to hand out
+	if (streak_left == 0)
+	{
+		current_col = random_col(col_data);
 		// Get a random integer between second and first of app_length
 		Util util;
-		int length = util.random_int(col.pair_prob.app_length.first, 
-				col.pair_prob.app_length.second);
-		for (int app_count = 0; app_count < length; app_count++)
-		{
-			add_char(line[i], col.pair_prob.pair_id);
-			if (app_count < length-1)
-			{
-				if (i+1 < line.size())
-					i++;
-				else
-					break; // Break loop when line is finished now
-			}
-		}
+		streak_left = util.random_int(current_col.pair_prob.app_length.first, 
+				current_col.pair_prob.app_length.second);
 	}
+	add_char(c, current_col.pair_prob.pair_id);
+	streak_left--;
 }
 
 void Render::render_grid()
@@ -114,6 +100,11 @@ void Render::render_grid()
 			attroff(COLOR_PAIR(grid[i][j].col_id));
 			lastxpos = getcurx(stdscr);
 		}
+		// If the next line is empty,
+		// lastxpos isn't updated because
+		// the loop doesn't even run
+		if (grid[i].size() == 0)
+			lastxpos = getcurx(stdscr);
 		printw("\n");
 	}
 	// Prepare y pos for cursor
@@ -215,7 +206,7 @@ int Render::run(Args my_args, File my_scroll)
 						add_char(myblock[lines][chars], 5); 
 						chars++;
 					}
-					add_char(myblock[lines][chars], 5);
+					add_colored_char(myblock[lines][chars], theme);
 					chars++;
 					// Break new line
 					if (chars >= myblock[lines].size())

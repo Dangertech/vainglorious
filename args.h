@@ -63,7 +63,7 @@ class Args
 		/* By default, the user can advance the
 		 * text by 1 line by pressing a button
 		 */
-
+		
 		// Input management
 		 
 		std::vector<std::string> switches =
@@ -71,7 +71,7 @@ class Args
 			"-f",
 			"--scrollfile",
 			"--until",
-
+			
 			// General properties
 			"-l",
 			"--limit",
@@ -89,7 +89,7 @@ class Args
 			"--cursor",
 			"-c",
 			"--no-show-cursor",
-
+			
 			// Input related
 			"-b",
 			"--movement-behaviour",
@@ -104,7 +104,7 @@ class Args
 			"-h",
 			"--help"
 		};
-
+		
 		// Flag processors 
 		 
 		int process_file(int &i, int argc, char * argv[]);
@@ -120,15 +120,15 @@ class Args
 		int process_custom_theme(int &i, int argc, char * argv[]);
 		int process_background(int &i, int argc, char * argv[]);
 		int process_cursor(int &i, int argc, char * argv[]);
-
+		
 		std::vector<unsigned char> unify_color_input(std::string input);
-
+		
 		int process_behaviour(int &i, int argc, char * argv[]);
 		int process_style(int &i, int argc, char * argv[]);
 		int process_speed(int &i, int argc, char * argv[]);
-
-
-
+		
+		
+		
 		// Error/Help messages
 		 
 		#define s(X) std::string(X)
