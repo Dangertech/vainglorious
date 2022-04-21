@@ -189,7 +189,13 @@ int Render::run(Args my_args, File my_scroll)
 		 
 		 
 		// Place new characters and render them
-		if (to_space == 0)
+		// If there's something to space, enter a new line instead!
+			/* Blocks are an exception:
+			 * When enabled, the spacing is
+			 * run the same input as the rest
+			 * of the block to not interrupt the flow
+			 */
+		if (to_space == 0 || my_args.get_style() == BLOCK)
 		{
 			switch(my_args.get_style())
 			{
@@ -217,11 +223,33 @@ int Render::run(Args my_args, File my_scroll)
 					}
 					break;
 				case BLOCK:
+					// Do the spacing first
+					while(to_space > 0)
+					{
+						add_char('\n', 1);
+						to_space--;
+					}
+					for (int i = 0; i<myblock.size(); i++)
+					{
+						for (int j = 0; j<myblock[i].size(); j++)
+						{
+							add_colored_char(myblock[i][j], theme);
+						}
+						add_char('\n', 1);
+					}
+					// Move up
+					int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+					while (grid.size() > scrlimit)
+						move_up();
+					// Overflow the lines so a new block is assigned next input
+					lines = myblock.size()+1;
 					break;
 			}
 		}
 		else
+		{
 			add_char('\n', 1);
+		}
 		
 		// Clear the screen every time something happens
 		if (my_args.get_forcedraw())
@@ -242,6 +270,6 @@ int Render::run(Args my_args, File my_scroll)
 	}
 	endwin();
 	// Reset cursor color
-	printf("\e]12;white\a");
+	change_cur_color({255, 255, 255});
 	return 0;
 }
