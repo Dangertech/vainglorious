@@ -166,27 +166,10 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	while (1)
 	{
-		// Setup blocks
-		
-		/* If everything in the block has been used,
-		 * set new block and reset blockpos
-		 */
-		if (lines >= myblock.size())
-		{
-			myblock = my_scroll.rblock();
-			lines = 0;
-			// "Query" the spacing
-			if (first_space)
-				first_space = false;
-			else
-				to_space = my_args.get_spacing();
-		}
-		 
 		// Wait for continuation
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
-		 
 		 
 		// Place new characters and render them
 		// If there's something to space, enter a new line instead!
@@ -195,108 +178,124 @@ int Render::run(Args my_args, File my_scroll)
 			 * run the same input as the rest
 			 * of the block to not interrupt the flow
 			 */
-		if (to_space == 0 || my_args.get_style() == BLOCK)
+		for (int times = 0; times < my_args.get_speed(); times++)
 		{
-			switch(my_args.get_style())
+			// Setup blocks
+			
+			/* If everything in the block has been used,
+			 * set new block and reset blockpos
+			 */
+			if (lines >= myblock.size())
 			{
-				case LINE:
-					add_line(myblock[lines].c_str(), theme);
-					lines++;
-					break;
-				case WORD:
-					while (myblock[lines][chars] != ' ')
-					{
+				myblock = my_scroll.rblock();
+				lines = 0;
+				// "Query" the spacing
+				if (first_space)
+					first_space = false;
+				else
+					to_space = my_args.get_spacing();
+			}
+			if (to_space == 0 || my_args.get_style() == BLOCK)
+			{
+				switch(my_args.get_style())
+				{
+					case LINE:
+						add_line(myblock[lines].c_str(), theme);
+						lines++;
+						break;
+					case WORD:
+						while (myblock[lines][chars] != ' ')
+						{
+							add_colored_char(myblock[lines][chars], theme);
+							chars++;
+							if (chars >= myblock[lines].size())
+							{
+								chars = 0;
+								add_char('\n', 1);
+								lines++;
+								// Fill up to the next real character
+								if (lines < myblock.size())
+								{
+									while (myblock[lines][chars] == '\t')
+									{
+										add_char(myblock[lines][chars], 1);
+										chars++;
+									}
+								}
+								// Ensure at least one input per line
+								break;
+							}
+						}
+						if (lines < myblock.size())
+						{
+							while(myblock[lines][chars] == ' ')
+							{
+								add_colored_char(myblock[lines][chars], theme);
+								chars++;
+							}
+						}
+						break;
+					case CHARACTER:
+						// Skip tabs (User doesn't have to press keys for them)
+						while (myblock[lines][chars] == '\t')
+						{
+							add_char(myblock[lines][chars], 1); 
+							chars++;
+						}
 						add_colored_char(myblock[lines][chars], theme);
 						chars++;
+						// Break new line
 						if (chars >= myblock[lines].size())
 						{
 							chars = 0;
 							add_char('\n', 1);
 							lines++;
-							// Fill up to the next real character
-							if (lines < myblock.size())
+						}
+						break;
+					case BLOCK:
+						// Do the spacing first
+						while(to_space > 0)
+						{
+							add_char('\n', 1);
+							to_space--;
+						}
+						for (int i = 0; i<myblock.size(); i++)
+						{
+							for (int j = 0; j<myblock[i].size(); j++)
 							{
-								while (myblock[lines][chars] == '\t')
-								{
-									add_char(myblock[lines][chars], 1);
-									chars++;
-								}
+								add_colored_char(myblock[i][j], theme);
 							}
-							// Ensure at least one input per line
-							break;
+							add_char('\n', 1);
 						}
-					}
-					if (lines < myblock.size())
-					{
-						while(myblock[lines][chars] == ' ')
-						{
-							add_colored_char(myblock[lines][chars], theme);
-							chars++;
-						}
-					}
-					break;
-				case CHARACTER:
-					// Skip tabs (User doesn't have to press keys for them)
-					while (myblock[lines][chars] == '\t')
-					{
-						add_char(myblock[lines][chars], 1); 
-						chars++;
-					}
-					add_colored_char(myblock[lines][chars], theme);
-					chars++;
-					// Break new line
-					if (chars >= myblock[lines].size())
-					{
-						chars = 0;
-						add_char('\n', 1);
-						lines++;
-					}
-					break;
-				case BLOCK:
-					// Do the spacing first
-					while(to_space > 0)
-					{
-						add_char('\n', 1);
-						to_space--;
-					}
-					for (int i = 0; i<myblock.size(); i++)
-					{
-						for (int j = 0; j<myblock[i].size(); j++)
-						{
-							add_colored_char(myblock[i][j], theme);
-						}
-						add_char('\n', 1);
-					}
-					// Move up
-					int scrlimit = getmaxy(stdscr)-my_args.get_limit();
-					while (grid.size() > scrlimit)
-						move_up();
-					// Overflow the lines so a new block is assigned next input
-					lines = myblock.size()+1;
-					break;
+						// Move up
+						int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+						while (grid.size() > scrlimit)
+							move_up();
+						// Overflow the lines so a new block is assigned next input
+						lines = myblock.size()+1;
+						break;
+				}
 			}
-		}
-		else
-		{
-			add_char('\n', 1);
+			else
+				add_char('\n', 1);
+			 
+			// Start moving up when the text has advanced far enough
+			int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+			if (scrlimit < 0)
+				scrlimit = 0;
+			if (grid.size() > scrlimit)
+				move_up();
+			 
+			// to_space management
+			 
+			if (to_space > 0)
+				to_space--;
 		}
 		
 		// Clear the screen every time something happens
 		if (my_args.get_forcedraw())
 			cleardraw();
-		render_grid();
-		 
-		// Start moving up when the text has advanced far enough
-		int scrlimit = getmaxy(stdscr)-my_args.get_limit();
-		if (scrlimit < 0)
-			scrlimit = 0;
-		if (grid.size() > scrlimit)
-			move_up();
-		 
-		// to_space management
-		 
-		if (to_space > 0)
-			to_space--;
+		render_grid(); // Render dat shit!
 	}
 	endwin();
 	// Reset cursor color
