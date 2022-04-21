@@ -20,17 +20,34 @@ class Render
 			}
 		};
 		std::vector<std::vector<Cell>> grid;
+		
+		/* Only used when behaviour is AUTO */
+		float seconds_to_input = 0;
 		 
-		void add_char(char c, int col_id);
+		/* Add a char where the color is handled
+		 * automatically
+		 */
+		void add_colored_char(char c, std::vector<Color> col_data);
+		int streak_left = 0;
+		Color current_col;
+		 
+		/* "Low-Level" character adder
+		 * Takes '\n' as a special argument
+		 * to add a new line
+		 */
+		void add_char(char c, int c_pair);
 		void render_grid();
-		void move_up();
-
+		/* Delete the topmost line */
+		void move_up();  
+		
 		void change_cur_color(std::vector<unsigned char> rgb);
-
+		 
 		/* Gets a random pair with the defined probabilities */
 		Color random_col(std::vector<Color> );
 		void add_line(std::string line, std::vector<Color> col_data);
 		void cleardraw();
+		 
+		 
 	public:
 		int run(Args, File);
 };

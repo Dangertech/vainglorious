@@ -23,21 +23,38 @@ void Args::process(int argc, char* argv[])
 					exit(1);
 				}
 				break;
-			case 4: case 5: // -l, --limit
+			case 2: // --until
+				if (process_until(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("until");
+					exit(1);
+				}
+				break;
+			case 3: case 4: // -l, --limit
 				if (process_limit(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("limit");
 					exit(1);
 				}
 				break;
-			case 6: case 7: // -T, --theme
+			case 5: // --spacing
+				if (process_spacing(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("spacing");
+					exit(1);
+				}
+				break;
+			case 6: // --forcedraw
+				INVERT(forcedraw);
+				break;
+			case 7: case 8: // -T, --theme
 				if (process_theme(i, argc, argv) == ERROR)
 				{
 					std::cout << err_msgs.at("theme");
 					exit(1);
 				}
 				break;
-			case 8: case 9: // -F, --colorfile
+			case 9: case 10: // -F, --colorfile
 			{
 				int ret = process_custom_theme(i, argc, argv);
 				if (ret == -1)
@@ -57,13 +74,13 @@ void Args::process(int argc, char* argv[])
 				}
 				break;
 			}
-			case 10: case 11: // -B, --background
+			case 11: case 12: // -B, --background
 				if (process_background(i, argc, argv) == ERROR)
 				{
 					exit(1);
 				}
 				break;
-			case 12: case 13: // -C, --cursor
+			case 13: case 14: // -C, --cursor
 				switch(process_cursor(i, argc, argv))
 				{
 					case 0:
@@ -98,28 +115,43 @@ void Args::process(int argc, char* argv[])
 						break;
 				}
 				break;
-			case 14: case 15: // -c, --no-show-cursor
+			case 15: case 16: // -c, --no-show-cursor
 				INVERT(show_cursor);
 				break;
-			case 16: // --spacing
-				if (process_spacing(i, argc, argv) == ERROR)
+			case 17: case 18: // -b, --movement-behaviour
+				if (process_behaviour(i, argc, argv) == ERROR)
 				{
-					std::cout << err_msgs.at("spacing");
+					std::cout << "Argument wrongly used!" << std::endl;
 					exit(1);
 				}
 				break;
-			case 17: // --forcedraw
-				INVERT(forcedraw);
-				break;
-			case 18: // --until
-				if (process_until(i, argc, argv) == ERROR)
+			case 19: case 20: // -s, --movement-style
+				if (process_style(i, argc, argv) == ERROR)
 				{
-					std::cout << err_msgs.at("until");
+					std::cout << "Argument wrongly used!" << std::endl;
 					exit(1);
 				}
 				break;
-			case 20: // --dry
+			case 21: case 22: // -S, --movement-speed
+				if (process_speed(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
+				break;
+			case 23: case 24: // -d, --movement-delay
+				if (process_auto_delay(i, argc, argv) == ERROR)
+				{
+					std::cout << "Argument wrongly used!" << std::endl;
+					exit(1);
+				}
+				break;
+			case 25: // --debug (UNUSED)
+				break;
+			case 26: // --dry
 				INVERT(dry);
+				break;
+			case 27: case 28: // -h, --help
 				break;
 			default:
 				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;
@@ -148,28 +180,23 @@ void Args::makepairs()
 
 int Args::process_file(int &i, int argc, char* argv[])
 {
-	if (i < argc-1)
-	{
-		i++;
-		file = argv[i];
-	}
-	else
+	i++;
+	if (i > argc-1)
 		return ERROR;
+	file = argv[i];
 	return 0;
 }
 
 int Args::process_limit(int &i, int argc, char* argv[])
 {
-	if (i < argc-1)
-	{
-		i++;
-		if (atoi(argv[i]) < 1)
-			limit = 1;
-		else
-			limit = atoi(argv[i]);
-	}
-	else
+
+	i++;
+	if (i > argc-1)
 		return ERROR;
+	if (atoi(argv[i]) < 1)
+		limit = 1;
+	else
+		limit = atoi(argv[i]);
 	return 0;
 }
 
@@ -178,7 +205,6 @@ int Args::process_theme(int &i, int argc, char* argv[])
 	i++;
 	if (i > argc-1)
 		return ERROR;
-	
 	Util util;
 	DefTheme thm;
 	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), 
@@ -204,6 +230,8 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 {
 	// Get colorfile name
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	std::string name = std::string(argv[i]);
 	std::ifstream cfile(name);
 	if (!cfile.is_open())
@@ -304,7 +332,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 int Args::process_background(int &i, int argc, char* argv[])
 {
 	i++;
-	if (i  > argc-1)
+	if (i > argc-1)
 		return ERROR;
 
 	std::string input = std::string(argv[i]);
@@ -327,6 +355,8 @@ int Args::process_cursor(int &i, int argc, char* argv[])
 {
 	 
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	std::string input = std::string(argv[i]);
 	std::vector<unsigned char> ret;
 	try
@@ -425,6 +455,8 @@ std::vector<unsigned char> Args::unify_color_input(std::string input)
 int Args::process_until(int &i, int argc, char* argv[])
 {
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	Util util;
 	if (!util.is_number(std::string(argv[i])))
 		return ERROR;
@@ -435,6 +467,8 @@ int Args::process_until(int &i, int argc, char* argv[])
 int Args::process_spacing(int &i, int argc, char * argv[])
 {
 	i++;
+	if (i > argc-1)
+		return ERROR;
 	Util util;
 	if (!util.is_number(std::string(argv[i])))
 		return ERROR;
@@ -464,4 +498,68 @@ std::vector<unsigned char> Args::get_curtheme()
 		return thm.get_curcol(themeid);
 	else
 		return custom_cur;
+}
+
+
+int Args::process_behaviour(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"input", "auto"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: behaviour = INPUT; break;
+		case 1: behaviour = AUTO; break;
+	}
+	return 0;
+}
+int Args::process_style(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"line", "word", "character", "block"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: style = LINE; break;
+		case 1: style = WORD; break;
+		case 2: style = CHARACTER; break;
+		case 3: style = BLOCK; break;
+	}
+	return 0;
+}
+int Args::process_speed(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	int ipt = atoi(argv[i]);
+	if (ipt < 0)
+		return ERROR;
+	speed = ipt;
+	return 0;
+}
+int Args::process_auto_delay(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	float ipt = float(atof(argv[i]));
+	if (ipt < 0)
+		return ERROR;
+	auto_delay = ipt;
+	return 0;
 }

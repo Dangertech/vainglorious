@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <random>
 #include <iostream>
+#include <chrono>
 #include "render.h"
 #include "file.h"
 #include "util.h"
@@ -11,13 +12,13 @@ void Render::move_up()
 	grid.erase(grid.begin());
 }
 
-void Render::add_char(char c, int col_id)
+void Render::add_char(char c, int c_pair)
 {
 	if (grid.size() == 0)
 		grid.push_back(std::vector<Cell>()); // Failsafe
-	 
+	
 	if (c != '\n')
-		grid[grid.size()-1].push_back(Cell(c, col_id));
+		grid[grid.size()-1].push_back(Cell(c, c_pair));
 	else
 	{
 		grid.push_back(std::vector<Cell>());
@@ -38,13 +39,13 @@ Color Render::random_col(std::vector<Color> col_data)
 	// Basically our seed without using the time
 	std::random_device rd;
 	std::mt19937 gen(rd());
-
+	
 	// Get weights
 	std::vector<int> weights(col_data.size());
 	// Fill weights with defined weights from probability
 	for (int i = 0; i<col_data.size(); i++)
 		weights[i] = col_data[i].pair_prob.prob;
-
+	
 	std::discrete_distribution<> dist(weights.begin(), weights.end());
 	 
 	/* dist(gen) returns a color index according to the weights
@@ -55,42 +56,28 @@ Color Render::random_col(std::vector<Color> col_data)
 
 void Render::add_line(std::string line, std::vector<Color> col_data)
 {
-	/* To circumvent multiple difficulties with
-	 * the new line problem, this function just doesn't
-	 * finish a line at the end but instead finishes it at
-	 * the beginning of it's cast
-	 */
-	if (grid.size() > 0) // Failsafe
-		if (grid[grid.size()-1].size() > 0)
-			add_char('\n', 1);
+	if (grid.size())
+		add_char('\n', 1);
 	for (int i = 0; i<line.size(); i++)
 	{
-		Color col;
-		// Decide Color pair
-		if (col_data.size() > 1)
-		{
-			// Generate colpair from pair_data
-			col = random_col(col_data);
-		}
-		else if (col_data.size() == 1)
-			col = col_data[0]; // Just save the resources
-		
+		add_colored_char(line[i], col_data);
+	}
+}
+
+void Render::add_colored_char(char c, std::vector<Color> col_data)
+{
+	// No more colors of the same type, assign a
+	// new color to hand out
+	if (streak_left == 0)
+	{
+		current_col = random_col(col_data);
 		// Get a random integer between second and first of app_length
 		Util util;
-		int length = util.random_int(col.pair_prob.app_length.first, 
-				col.pair_prob.app_length.second);
-		for (int app_count = 0; app_count < length; app_count++)
-		{
-			add_char(line[i], col.pair_prob.pair_id);
-			if (app_count < length-1)
-			{
-				if (i+1 < line.size())
-					i++;
-				else
-					break; // Break loop when line is finished now
-			}
-		}
+		streak_left = util.random_int(current_col.pair_prob.app_length.first, 
+				current_col.pair_prob.app_length.second);
 	}
+	add_char(c, current_col.pair_prob.pair_id);
+	streak_left--;
 }
 
 void Render::render_grid()
@@ -108,12 +95,17 @@ void Render::render_grid()
 		for (int j = 0; j<grid[i].size(); j++)
 		{
 			if (getcurx(stdscr) > getmaxx(stdscr)-2)
-				break; // Stop rendering
+				break; // Stop rendering if text is beyond terminal bounds
 			attron(COLOR_PAIR(grid[i][j].col_id));
 			printw("%c", grid[i][j].c);
 			attroff(COLOR_PAIR(grid[i][j].col_id));
 			lastxpos = getcurx(stdscr);
 		}
+		// If the next line is empty,
+		// lastxpos isn't updated because
+		// the loop doesn't even run
+		if (grid[i].size() == 0)
+			lastxpos = getcurx(stdscr);
 		printw("\n");
 	}
 	// Prepare y pos for cursor
@@ -144,6 +136,8 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	initscr();
 	noecho(); // Turn off printing of pressed character
+	if (my_args.get_behaviour() == AUTO)
+		nodelay(stdscr, true);
 	start_color(); // Use Colors
 	// Disable cursor in case of -c
 	if (!my_args.get_show_cursor())
@@ -159,7 +153,10 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	int ch;
 	std::vector<std::string> myblock;
-	int blockpos = 0;
+	// Lines into a block
+	int lines = 0;
+	// Characters into a line on a block
+	int chars = 0;
 	/* If to_space is 0, everything
 	 * runs normally, lines of blocks
 	 * get added; If it's not 0, an empty line
@@ -172,49 +169,162 @@ int Render::run(Args my_args, File my_scroll)
 	 
 	while (1)
 	{
-		/* If everything in the block has been used,
-		 * set new block and reset blockpos
-		 */
-		if (blockpos >= myblock.size())
-		{
-			myblock = my_scroll.rblock();
-			blockpos = 0;
-			// "Query" the spacing
-			if (first_space)
-				first_space = false;
-			else
-				to_space = my_args.get_spacing();
-		}
-		 
+		// Wait for continuation
+		// (or don't because nodelay() is set if behaviour is AUTO
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
-		 
-		if (to_space == 0)
+		if (my_args.get_behaviour() == AUTO)
 		{
-			add_line(myblock[blockpos].c_str(), theme);
-			blockpos++;
+			bool break_outer = false;
+			using namespace std::chrono;
+			high_resolution_clock::time_point begin = 
+					high_resolution_clock::now();
+			high_resolution_clock::time_point now = 
+					high_resolution_clock::now();
+			while (duration_cast<duration<double>>(now-begin).count() 
+					< my_args.get_auto_delay())
+			{
+				now = high_resolution_clock::now();
+				ch = getch();
+				if (ch == 4) // CTRL-D
+				{
+					break_outer = true;
+					break;
+				}
+			}
+			if (break_outer)
+				break;
 		}
-		else
-			add_line(" ", theme);
 		 
+		// Place new characters and render them
+		// If there's something to space, enter a new line instead!
+			/* Blocks are an exception:
+			 * When enabled, the spacing is
+			 * run the same input as the rest
+			 * of the block to not interrupt the flow
+			 */
+		for (int times = 0; times < my_args.get_speed(); times++)
+		{
+			// Setup blocks
+			
+			/* If everything in the block has been used,
+			 * set new block and reset blockpos
+			 */
+			if (lines >= myblock.size())
+			{
+				myblock = my_scroll.rblock();
+				lines = 0;
+				// "Query" the spacing
+				if (first_space)
+					first_space = false;
+				else
+					to_space = my_args.get_spacing();
+			}
+			if (to_space == 0 || my_args.get_style() == BLOCK)
+			{
+				switch(my_args.get_style())
+				{
+					case LINE:
+						add_line(myblock[lines].c_str(), theme);
+						lines++;
+						break;
+					case WORD:
+						while (myblock[lines][chars] != ' ')
+						{
+							add_colored_char(myblock[lines][chars], theme);
+							chars++;
+							if (chars >= myblock[lines].size())
+							{
+								chars = 0;
+								add_char('\n', 1);
+								lines++;
+								// Fill up to the next real character
+								if (lines < myblock.size())
+								{
+									while (myblock[lines][chars] == '\t')
+									{
+										add_char(myblock[lines][chars], 1);
+										chars++;
+									}
+								}
+								// Ensure at least one input per line
+								break;
+							}
+						}
+						if (lines < myblock.size())
+						{
+							while(myblock[lines][chars] == ' ')
+							{
+								add_colored_char(myblock[lines][chars], theme);
+								chars++;
+							}
+						}
+						break;
+					case CHARACTER:
+						// Skip tabs (User doesn't have to press keys for them)
+						while (myblock[lines][chars] == '\t')
+						{
+							add_char(myblock[lines][chars], 1); 
+							chars++;
+						}
+						add_colored_char(myblock[lines][chars], theme);
+						chars++;
+						// Break new line
+						if (chars >= myblock[lines].size())
+						{
+							chars = 0;
+							add_char('\n', 1);
+							lines++;
+						}
+						break;
+					case BLOCK:
+						// Do the spacing first
+						while(to_space > 0)
+						{
+							add_char('\n', 1);
+							to_space--;
+						}
+						for (int i = 0; i<myblock.size(); i++)
+						{
+							for (int j = 0; j<myblock[i].size(); j++)
+							{
+								add_colored_char(myblock[i][j], theme);
+							}
+							add_char('\n', 1);
+						}
+						// Move up
+						int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+						while (grid.size() > scrlimit)
+							move_up();
+						// Overflow the lines so a new block is assigned next input
+						lines = myblock.size()+1;
+						break;
+				}
+			}
+			else
+				add_char('\n', 1);
+			 
+			// Start moving up when the text has advanced far enough
+			int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+			if (scrlimit < 0)
+				scrlimit = 0;
+			if (grid.size() > scrlimit)
+				move_up();
+			 
+			// to_space management
+			 
+			if (to_space > 0)
+				to_space--;
+		}
+		
 		// Clear the screen every time something happens
 		if (my_args.get_forcedraw())
 			cleardraw();
-		render_grid();
-		 
-		// Start moving up when the text has advanced far enough
-		int scrlimit = getmaxy(stdscr)-my_args.get_limit();
-		if (scrlimit < 0)
-			scrlimit = 0;
-		if (grid.size() > scrlimit)
-			move_up();
-		 
-		if (to_space > 0)
-			to_space--;
+		render_grid(); // Render dat shit!
 	}
 	endwin();
 	// Reset cursor color
-	printf("\e]12;white\a");
+	change_cur_color({255, 255, 255});
 	return 0;
 }
