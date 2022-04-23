@@ -161,6 +161,7 @@ void Args::process(int argc, char* argv[])
 				INVERT(dry);
 				break;
 			case 27: case 28: // -h, --help
+				show_help();
 				exit(1);
 				break;
 			default:
@@ -575,4 +576,48 @@ int Args::process_auto_delay(int &i, int argc, char* argv[])
 		return ERROR;
 	auto_delay = ipt;
 	return 0;
+}
+
+void Args::show_help()
+{
+	std::cout 
+		<< "vainglorious - a feature-rich \"hacking\" simulator for your terminal\n"
+		<< "Usage: vain [options...]"
+		<< "\n"
+		<< "\n"
+		<< "OPTIONS\n"
+		<< "\n"
+		<< "Vainglorious features 14 distinct properties to edit\n"
+		<< "that open possibilities like making your own text to type,\n"
+		<< "custom themes, customizable scroll behaviours and much more\n"
+		<< "Detailed showcase of every (relevant) flag:\n"
+		<< "\n"
+		<< C_RED_U << "Formatting 1337 CODE:\n" << C_OFF
+		<< err_msgs.at("file")
+		<< err_msgs.at("until")
+		<< err_msgs.at("limit")
+		<< err_msgs.at("spacing")
+		<< err_msgs.at("forcedraw")
+		<< "\n"
+		<< C_RED_U << "Making it COLORFUL:\n" << C_OFF
+		<< err_msgs.at("theme")
+		<< err_msgs.at("colorfile")
+		<< err_msgs.at("background")
+		<< err_msgs.at("cursor")
+		<< err_msgs.at("no-show-cursor")
+		<< "\n"
+		<< C_RED_U << "Changing the HEAT:\n" << C_OFF
+		<< err_msgs.at("behaviour")
+		<< err_msgs.at("style")
+		<< err_msgs.at("speed")
+		<< err_msgs.at("delay")
+		<< "\n"
+		<< C_RED_U << "Popping the HOOD:\n" << C_OFF
+		<< err_msgs.at("dry")
+		<< err_msgs.at("help")
+		<< "\n"
+		<< "Have fun using vainglorious! May your friends be frightened ;)!\n"
+		<< "(Find this project under https://github.com/Dangertech/vainglorious)\n"
+		<< "Written by Kjell Nagel <dangertech@e.email>\n"
+		;
 }

@@ -5,6 +5,7 @@
 #define DRY 5;
 
 #define C_GREEN_U "\033[4;32m"
+#define C_RED_U "\033[4;31m"
 #define C_OFF "\033[0m"
 
 /* ncurses-color-factor: Used to convert RGB values 

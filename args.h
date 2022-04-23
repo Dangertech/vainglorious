@@ -131,6 +131,7 @@ class Args
 		int process_speed(int &i, int argc, char * argv[]);
 		int process_auto_delay(int &i, int argc, char * argv[]);
 		
+		void show_help();
 		
 		
 		// Error/Help messages
