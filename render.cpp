@@ -174,6 +174,11 @@ int Render::run(Args my_args, File my_scroll)
 		ch = getch();
 		if (ch == 4) // CTRL-D
 			break;
+		else if (ch == 12) // CTRL-L
+		{
+			cleardraw();
+			render_grid();
+		}
 		if (my_args.get_behaviour() == AUTO)
 		{
 			bool break_outer = false;
@@ -191,6 +196,11 @@ int Render::run(Args my_args, File my_scroll)
 				{
 					break_outer = true;
 					break;
+				}
+				else if (ch == 12) // CTRL-L
+				{
+					cleardraw();
+					render_grid();
 				}
 			}
 			if (break_outer)
