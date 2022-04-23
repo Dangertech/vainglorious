@@ -64,12 +64,17 @@ void Args::process(int argc, char* argv[])
 						<< "and existence." << std::endl;
 					exit(1);
 				}
+				else if (ret == ERROR)
+				{
+					std::cout << err_msgs.at("colorfile");
+					exit(1);
+				}
 				else if (ret != 0)
 				{
 					std::cout << "The given colorfile is invalid near "
 						<< "line " C_GREEN_U << ret << C_OFF << "." << std::endl
 						<< "\tHere is the info entry for colorfiles:" << std::endl
-						<< err_msgs.at("custom_theme");
+						<< err_msgs.at("colorfile");
 					exit(1);
 				}
 				break;
@@ -77,6 +82,7 @@ void Args::process(int argc, char* argv[])
 			case 11: case 12: // -B, --background
 				if (process_background(i, argc, argv) == ERROR)
 				{
+					std::cout << err_msgs.at("background");
 					exit(1);
 				}
 				break;
@@ -87,19 +93,22 @@ void Args::process(int argc, char* argv[])
 						break;
 					case 1:
 						std::cout << "The RED part of the hex code you provided is invalid.\n"
-							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
 							<< std::endl;
 						exit(1);
 						break;
 					case 2:
 						std::cout << "The GREEN part of the hex code you provided is invalid.\n"
-							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
 							<< std::endl;
 						exit(1);
 						break;
 					case 3:
 						std::cout << "The BLUE part of the hex code you provided is invalid.\n"
-							<< "It has to be either the numbers 0-9 or one of the letters \"abcdef\" uppercase or lowercase."
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
 							<< std::endl;
 						exit(1);
 						break;
@@ -121,28 +130,28 @@ void Args::process(int argc, char* argv[])
 			case 17: case 18: // -b, --movement-behaviour
 				if (process_behaviour(i, argc, argv) == ERROR)
 				{
-					std::cout << "Argument wrongly used!" << std::endl;
+					std::cout << err_msgs.at("behaviour") << std::endl;
 					exit(1);
 				}
 				break;
 			case 19: case 20: // -s, --movement-style
 				if (process_style(i, argc, argv) == ERROR)
 				{
-					std::cout << "Argument wrongly used!" << std::endl;
+					std::cout << err_msgs.at("style") << std::endl;
 					exit(1);
 				}
 				break;
 			case 21: case 22: // -S, --movement-speed
 				if (process_speed(i, argc, argv) == ERROR)
 				{
-					std::cout << "Argument wrongly used!" << std::endl;
+					std::cout << err_msgs.at("speed") << std::endl;
 					exit(1);
 				}
 				break;
 			case 23: case 24: // -d, --movement-delay
 				if (process_auto_delay(i, argc, argv) == ERROR)
 				{
-					std::cout << "Argument wrongly used!" << std::endl;
+					std::cout << err_msgs.at("delay") << std::endl;
 					exit(1);
 				}
 				break;
@@ -152,9 +161,13 @@ void Args::process(int argc, char* argv[])
 				INVERT(dry);
 				break;
 			case 27: case 28: // -h, --help
+				exit(1);
 				break;
 			default:
-				std::cout << "Invalid argument \"" << argv[i] << "\"! Ignoring!" << std::endl;
+				std::cout << "Invalid argument \"" << argv[i] << "\"!" << std::endl
+					<< "\tDo '" << C_GREEN_U << "vain --help" << C_OFF 
+						<< "' for info on how to use vainglorious!" << std::endl;
+				exit(1);
 				break;
 		}
 	}
@@ -236,17 +249,17 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 	std::ifstream cfile(name);
 	if (!cfile.is_open())
 		return -1; // File is unknown
-
+	
 	// Set themeid to -1 to mark that the theem used is
 	// not to be found in DefTheme objects
 	themeid = -1;
-
+	
 	// Parse colorfile
 	int lnum = 0;
 	std::string line;
 	while (getline(cfile, line))
 	{
-
+		
 		// Discard line from a '%'(comment) sign on
 		for (int i = 0; i<line.size(); i++)
 		{
@@ -291,7 +304,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 			lnum++;
 			continue;
 		}
-
+		
 		// Determine min, max and probability
 		int min = 1, max = 1, prob = 1;
 		if (hex && spl.size() >= 3)
@@ -308,7 +321,7 @@ int Args::process_custom_theme(int &i, int argc, char* argv[])
 			if (spl.size() > 6)
 				prob = std::stoi(spl[5]);
 		}
-
+		
 		// Switch around min and max if they are mixed up
 		if (min > max)
 		{
