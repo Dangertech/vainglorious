@@ -123,3 +123,2152 @@ void Args::process_file(int &i, int argc, char* argv[])
 	i++;
 	file = argv[i];
 }
+
+class Args
+{
+	private:
+		
+		// Properties (accessible through public functions)
+		 
+		/* File to read blocks from */
+		std::string file = DEF_FILE;
+		/* Until where should the scroll file
+		 * be read? -1 reads until the end
+		 */
+		int read_until = -1;
+		/* How far down from the lower terminal border
+		 * should the text be shown before scrolling up?
+		 */
+		int spacing = 1;
+		/* How many lines should be left empty
+		 * between individual blocks
+		 */
+		int limit = 4;
+		/* Should the screen be cleared and redrawn
+		 * from scratch every time it changes?
+		 */
+		bool forcedraw = false;
+		
+		/* Only get arguments and quit before initializing
+		 * the ncurses display
+		 */
+		bool dry = false;
+		
+		// Color settings
+		int themeid = 0;
+		/* The background color is
+		 * completely independent from
+		 * the set theme; It is used by args::makepairs()
+		 * to set the correct background color for every pair */
+		// Uses rgb values from range 0 to 1000
+		std::vector<int> bg_col = {0, 0, 0};
+		/* if this is false, only color 0 from a theme will be used */
+		bool multicol = true;
+		/* Custom theme that is set if the user gives a valid colorfile */
+		std::vector<Color> custom_theme = {};
+		/* Custom cursor scheme set by the user */
+		std::vector<unsigned char> custom_cur = {};
+		bool show_cursor = true;
+		
+		// Movement style
+		MovementBehaviour behaviour = INPUT;
+		ProgressStyle style = WORD;
+		int speed = 1;
+		/* By default, the user can advance the
+		 * text by 1 word per button press
+		 */
+		float auto_delay = 0.01; // Delay in seconds when behaviour is AUTO
+		
+		// Input management
+		 
+		std::vector<std::string> switches =
+		{
+			"-f",
+			"--scrollfile",
+			"--until",
+			
+			// General properties
+			"-l",
+			"--limit",
+			"--spacing",
+			"--forcedraw",
+			 
+			// Color related
+			"-T",
+			"--theme",
+			"-F",
+			"--colorfile",
+			"-B",
+			"--background",
+			"-C",
+			"--cursor",
+			"-c",
+			"--no-show-cursor",
+			
+			// Input related
+			"-b",
+			"--movement-behaviour",
+			"-s",
+			"--movement-style",
+			"-S",
+			"--movement-speed",
+			"-d",
+			"--movement-delay",
+			 
+			// Utilities
+			"--debug",
+			"--dry",
+			"-h",
+			"--help"
+		};
+		
+		// Flag processors 
+		 
+		int process_file(int &i, int argc, char * argv[]);
+		int process_until(int &i, int argc, char * argv[]);
+		int process_limit(int &i, int argc, char * argv[]);
+		int process_spacing(int &i, int argc, char * argv[]);
+		 
+		int process_theme(int &i, int argc, char * argv[]);
+		/* Return values: Returns 0 if everything is OK,
+		 * or the line number in which an error was encountered,
+		 * starting at 1; Returns -1 if the file could not be opened
+		 */
+		int process_custom_theme(int &i, int argc, char * argv[]);
+		int process_background(int &i, int argc, char * argv[]);
+		int process_cursor(int &i, int argc, char * argv[]);
+		
+		std::vector<unsigned char> unify_color_input(std::string input);
+		
+		int process_behaviour(int &i, int argc, char * argv[]);
+		int process_style(int &i, int argc, char * argv[]);
+		int process_speed(int &i, int argc, char * argv[]);
+		int process_auto_delay(int &i, int argc, char * argv[]);
+		
+		void show_help();
+		
+		
+		// Error/Help messages
+		 
+		#define s(X) std::string(X)
+		#define int_st(X) std::to_string(X)
+		// Ugly bodge for err_msgs.at("theme");
+		DefTheme listener;
+		std::string print_themes()
+		{
+			std::string ret;
+			std::vector<std::string> names = listener.get_themenames();
+			for (int i = 0; i<names.size(); i++)
+			{
+				ret += "\t\t" + names[i] + "\n";
+			}
+			return ret;
+		}
+		std::unordered_map<std::string, std::string> err_msgs =
+		{
+			{"file",
+				s("Usage of -f/--file:\n")
+				+ "\tSpecify a file to get text blocks from;\n"
+				+ "\tThe file should be cut in text BLOCKS, "
+					+ "which are separated by empty lines.\n"
+				+ "\tThe default scrollfile serves as an example.\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --file scrollfile.txt" + C_OFF + "'\n"
+				+ "\t\tDefault: '" + file + "'\n"
+			},
+			{"colorfile",
+				s("Usage of -F/--colorfile:\n")
+				+ "\tMake vainglorious use a custom theme contained in a file;\n"
+				+ "\t\tExample colorfile:\n"
+				+ "\t\t\t#000000 \% First line defines background color\n"
+				+ "\t\t\t\%Color, minimum length, maximum length, probability\n"
+				+ "\t\t\t#38b27f, 3, 5, 5\n"
+				+ "\t\t\t#6df1d8, 3, 4, 3\n"
+				+ "\t\t\t92, 44, 109, 4, 6, 4 \% Color can be given either in HEX or RGB format\n"
+				+ "\t\t\t#5da4a6, 4, 6, 4\n"
+				+ "\t\t\t#b8aec8, 2, 5, 3\n"
+				+ "\t\t\t#3c345c, 2, 3, 1\n"
+				+ "\t\tUsage example: '" + C_GREEN_U + "vain --colorfile mytheme.txt"
+					+ C_OFF + "'\n"
+			},
+			{"limit",
+				s("Usage of -l/--limit:\n")
+				+ "\tSet the bottom margin of the scrolling text;\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --limit 1" + C_OFF + "'\n"
+				+ "\t\tDefault: " + int_st(limit) + "\n"
+			},
+			{"cursor",
+				s("Usage of -C/--cursor:\n")
+				+ "\tSet the cursor color through either a theme name/id, a RGB value or a HEX value;\n"
+				+ "\tExamples:\n"
+				+ "\t\t- Theme name/id: '" + C_GREEN_U + "vain -C 1" 
+					+ C_OFF + "' sets the cursor color to the predefined cursor color of the theme with ID 1\n"
+				+ "\t\t- RGB value: '" + C_GREEN_U + "vain -C \"85, 255, 0\"" 
+					+ C_OFF + "' sets the cursor color to a bright green\n"
+				+ "\t\t- HEX value: '" + C_GREEN_U + "vain -C \"#3ebfb3\"" 
+					+ C_OFF + "' sets the cursor color to a teal tone\n"
+				+ "\tDefault: Cursor color is defined by the theme you chose\n"
+			},
+			{"no-show-cursor",
+				s("Usage of -c/--no-show-cursor:\n")
+				+ "\tDisable the cursor while typing;\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --no-show-cursor" + C_OFF + "'\n"
+				+ "\tDefault: off\n"
+			},
+			{"theme",
+				s("Usage of -T/--theme:\n")
+				+ "\tChange the theme to one of the predefined ones;\n"
+				+ "\tThere are currently " 
+					+ int_st(listener.get_themenames().size())
+					+ " themes available:\n"
+				+ print_themes()
+				+ "\tBIG THANKS to https://github.com/st3w/neo for some "
+					+ "theme colors which I shamelessly stole from their project\n"
+				+ "\tExamples:\n"
+				+ "\t\tBy name:  '" + C_GREEN_U + "vain --theme " 
+					+ listener.get_themenames()[1] + C_OFF + "'\n"
+				+ "\t\tBy index: '" + C_GREEN_U + "vain --theme 1" + C_OFF + "'\n"
+				+ "\t\t\t(The index starts at 0, so 1 is the " 
+					+ listener.get_themenames()[1] + " theme)\n"
+				+ "\tDefault: Green theme with index 0\n"
+			},
+			{"background",
+				s("Usage of -B/--background:\n")
+				+ "\tSet the background color using HEX or RGB notation;\n"
+				+ "\tThe background operates completely independent from the themes\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --background \"#685d59\""
+					+ C_OFF + "' sets the background color to a brownish grey\n"
+				+ "\tDefault: \"#000000\"\n"
+			},
+			{"spacing",
+				s("Usage of --spacing:\n")
+				+ "\tChange the amount of empty lines between individual blocks;\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --spacing 3" + C_OFF 
+					+ "' produces three empty lines after each block\n"
+				+ "\tDefault: " + int_st(spacing) + "\n"
+			},
+			{"until",
+				s("Usage of --until:\n")
+				+ "\tDefine until where the scroll file should be read;\n"
+				+ "\tThis can be used to avoid long wait times or Out-Of-Memory "
+					+ "situations when reading from very large files\n"
+				+ "\tNote that vainglorious does NOT read until the end of the "
+					+ "current block, it does a hard stop as soon as the given line is reached.\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --until 180 --scrollfile scroll.txt" + C_OFF
+					+ "' reads until line 180 from the file \"scroll.txt\"\n"
+				+ "\tDefault: The scrollfile is read until EOF\n"
+			},
+			{"forcedraw",
+				s("Usage of --forcedraw:\n")
+				+ "\tForce the program to redraw the whole screen every time an event happens;\n"
+				+ "\tThis prevents artefacts of text where it doesn't belong in some cases.\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --forcedraw" + C_OFF "' enables force drawing.\n"
+				+ "\tDefault: off.\n"
+			},
+			{"behaviour",
+				s("Usage of -b/--movement-behaviour:\n")
+				+ "\tSet if the text should be advanced by typing or "
+					+ "if it should scroll automatically;\n"
+				+ "\tTakes in either \"input\" or \"auto\" (in any capitalization)\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --movement-behaviour auto"
+					+ C_OFF + "'\n"
+				+ "\tDefault: input\n"
+			},
+			{"style",
+				s("Usage of -s/--movement-style:\n")
+				+ "\tChange what a unit is that is added to the text every event;\n"
+				+ "\tCan be either LINE, WORD, CHARACTER or BLOCK\n"
+				+ "\t(The flag -S/--movement-speed changes how many units are placed per event)\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --movement-style line"
+					+ C_OFF + "' advances the text in lines\n"
+				+ "\tDefault: WORD\n"
+			},
+			{"speed",
+				s("Usage of -S/--movement-speed:\n")
+				+ "\tChange how many units (see -s/--movement-style) are placed per event\n"
+				+ "\tExamples:\n"
+				+ "\t\t'" + C_GREEN_U + "vain -s line -S 4" 
+					+ C_OFF + "' adds 4 lines per keypress\n"
+				+ "\t\t'" + C_GREEN_U + "vain -s character -S 8 -b auto" 
+					+ C_OFF + "' adds 8 characters per automatic event (see -d/--movement-delay)\n"
+				+ "\tDefault: " + int_st(speed) + " (With -b and -s that gives: 1 word is advanced per keypress)\n"
+			},
+			{"delay",
+				s("Usage of -d/--movement-delay:\n")
+				+ "\tChange in which intervals events happen if -b is set to auto (in seconds)\n"
+				+ "\t\tExample: '" + C_GREEN_U + "vain --movement-behaviour auto --movement-delay 0.2"
+					+ C_OFF + "' makes the text advance every 0.2 seconds without requiring manual input\n"
+				+ "\tDefault: " + int_st(auto_delay) + " seconds \n"
+			},
+			{"dry",
+				s("Usage of --dry:\n")
+				+ "\tDon't enter the ncurses environment, stop after argument processing;\n"
+				+ "\t(For debug purposes only)\n"
+			},
+			{"help",
+				s("Usage of -h/--help:\n")
+				+ "\tShow this help text\n"
+			}
+		};
+	public:
+		void process(int argc, char* argv[]);
+		void makepairs();
+		 
+		std::string get_file() { return file; }
+		int get_read_until() { return read_until; }
+		 
+		int get_limit() { return limit; }
+		int get_spacing() { return spacing; }
+		bool get_forcedraw() { return forcedraw; }
+		 
+		int get_themeid() { return themeid; }
+		/* Returns either default theme or custom theme */
+		std::vector<Color> get_theme();
+		bool get_show_cursor() { return show_cursor; }
+		/* Returns curcol of theme_id when custom_cur is not set,
+		 * custom_cur content if otherwise
+		 */
+		std::vector<unsigned char> get_curtheme();
+
+		MovementBehaviour get_behaviour() { return behaviour; }
+		ProgressStyle get_style() { return style; }
+		int get_speed() { return speed; }
+		float get_auto_delay() { return auto_delay; }
+		 
+		bool get_dry() { return dry; }
+};
+
+class File
+{
+	private:
+		/* random offset; 
+		 * Increases by one every time rblock() has been called
+		 * Else, the same block would be chosen in each second
+		 */
+		int roff = 0; 
+		std::vector<std::vector<std::string>> blocks;
+	public:
+		int crunch_file(Args my_args); // Parse scroll and fill blocks
+		std::vector<std::string> rblock(); // Get a random block from the list
+		 
+		std::vector<std::vector<std::string>> get_blocks() { return blocks; }
+};
+
+class Render
+{
+	private:
+		/* Driver grid that characters are put into
+		 * and that is rendered every frame, offset by one
+		 */
+		struct Cell
+		{
+			char c;
+			int col_id;
+			Cell(char my_c, int my_col_id)
+			{
+				c = my_c;
+				col_id = my_col_id;
+			}
+		};
+		std::vector<std::vector<Cell>> grid;
+		
+		/* Only used when behaviour is AUTO */
+		float seconds_to_input = 0;
+		 
+		/* Add a char where the color is handled
+		 * automatically
+		 */
+		void add_colored_char(char c, std::vector<Color> col_data);
+		int streak_left = 0;
+		Color current_col;
+		 
+		/* "Low-Level" character adder
+		 * Takes '\n' as a special argument
+		 * to add a new line
+		 */
+		void add_char(char c, int c_pair);
+		void render_grid();
+		/* Delete the topmost line */
+		void move_up();  
+		
+		void change_cur_color(std::vector<unsigned char> rgb);
+		 
+		/* Gets a random pair with the defined probabilities */
+		Color random_col(std::vector<Color> );
+		void add_line(std::string line, std::vector<Color> col_data);
+		void cleardraw();
+		 
+		 
+	public:
+		int run(Args, File);
+};
+
+struct PairProb
+{
+	int pair_id; // The color pair id
+	std::pair<int, int> app_length; // For how long it appears
+	int prob; // Probability to start appearing
+};
+
+struct Color
+{
+	int id;
+	int R, G, B;
+	PairProb pair_prob;
+};
+
+// Holds information about all predefined themes
+class DefTheme
+{
+	public:
+		std::vector<std::string> get_themenames() {return themenames;}
+		std::vector<std::string> get_colnames() {return colnames;}
+		std::vector<Color> get_theme(int theme_id);
+		std::vector<unsigned char> get_curcol(int theme_id);
+	private:
+		/* The input and display name for the default
+		 * themes
+		 * The sort order implies the id of each theme
+		 * (e.g. the green theme has the id 0)
+		 */
+		std::vector<std::string> themenames =
+		{
+			"green",
+			"gold",
+			"yellow",
+			"rainbow",
+			"red",
+			"blue",
+			"cyan",
+			"orange",
+			"purple",
+			"vaporwave",
+			"gray"
+		};
+		/* General accepted names of colors,
+		 * used for setting the background color,
+		 * for example
+		 */
+		std::vector<std::string> colnames =
+		{
+			"black",
+			"red",
+			"green",
+			"yellow",
+			"blue",
+			"magenta",
+			"cyan",
+			"white"
+		};
+		/* The default colors for the predefined themes
+		 * The second layer is sorted by the theme ids
+		 */
+		std::vector<std::vector<Color>> themecols =
+		{
+			// These awesome colors are stolen from https://github.com/st3w/neo
+			// GREEN
+			{
+				// COLORID, R,   G,   B,ColPair,length,probability
+				{234,       71,  141, 83,  {1, {8,10}, 1} },
+				{22,        149, 243, 161, {2, {8,10}, 1} },
+				{28,        188, 596, 318, {3, {1,2}, 7} },
+				{35,        188, 714, 397, {4, {1,3}, 8} },
+				{78,        227, 925, 561, {5, {4,8}, 9} },
+				{84,        271, 973, 667, {6, {3,5}, 12} },
+				{159,       667, 1000, 941,{7, {3,6}, 7} }
+			},
+			// GOLD
+			{
+				{58, 839, 545, 216,   {1, {8, 10}, 2} },
+				{94, 905, 694, 447,   {2, {8, 10}, 6} },
+				{172, 945, 831, 635,  {3, {8, 10}, 4} },
+				{178, 1000, 922, 565, {4, {8, 10}, 2} },
+				{228, 1000, 953, 796, {5, {8, 10}, 2} },
+				{230, 976, 976, 968,  {6, {8, 10}, 1} }
+			},
+			// YELLOW
+			{
+				// Default Xterm colors
+				{100, -1,-1,-1, {1, {1, 9}, 2} },
+				{142, -1,-1,-1, {2, {3, 7}, 2} },
+				{184, -1,-1,-1, {3, {3, 7}, 4} },
+				{226, -1,-1,-1, {4, {3, 7}, 5} },
+				{227, -1,-1,-1, {5, {3, 7}, 3} },
+				{229, -1,-1,-1, {6, {2, 4}, 4} },
+				{230, -1,-1,-1, {7, {6, 12}, 3} }
+			},
+			// RAINBOW (cancer)
+			{
+				{196, -1,-1,-1, {1, {1, 6}, 1} },
+				{208, -1,-1,-1, {2, {1, 6}, 1} },
+				{226, -1,-1,-1, {3, {1, 6}, 1} },
+				{46,  -1,-1,-1, {4, {1, 6}, 1} },
+				{21,  -1,-1,-1, {5, {1, 6}, 1} },
+				{93,  -1,-1,-1, {6, {1, 6}, 1} },
+				{201, -1,-1,-1, {7, {1, 6}, 1} }
+			},
+			// RED
+			{
+				{234, -1,-1,-1, {1, {6, 8}, 1} },
+				{52, -1,-1,-1,  {2, {3, 5}, 1} },
+				{88, -1,-1,-1,  {3, {2, 4}, 3} },
+				{124, -1,-1,-1, {4, {3, 5}, 6} },
+				{160, -1,-1,-1, {5, {2, 3}, 5} },
+				{196, -1,-1,-1, {6, {3, 4}, 7} },
+				{197,255,56,59, {7, {4, 6}, 4} },
+				{217, -1,-1,-1, {8, {2, 4}, 2} }
+			},
+			// BLUE
+			{
+				{234, -1,-1,-1, {1, {3, 6}, 1} },
+				{17, -1,-1,-1,  {2, {3, 6}, 1} },
+				{18, -1,-1,-1,  {3, {3, 8}, 1} },
+				{19, -1,-1,-1,  {4, {3, 6}, 6} },
+				{20, -1,-1,-1,  {5, {3, 6}, 6} },
+				{21, -1,-1,-1,  {6, {3, 6}, 2} },
+				{75, -1,-1,-1,  {7, {2, 5}, 4} },
+				{159, -1,-1,-1, {8, {2, 5}, 1} }
+			},
+			// CYAN
+			{
+				{24, -1,-1,-1,  {1, {1, 1}, 1} },
+				{25, -1,-1,-1,  {2, {1, 1}, 1} },
+				{31, -1,-1,-1,  {3, {1, 1}, 1} },
+				{32, -1,-1,-1,  {4, {1, 1}, 1} },
+				{38, -1,-1,-1,  {5, {1, 1}, 1} },
+				{45, -1,-1,-1,  {6, {1, 1}, 1} },
+				{159, -1,-1,-1, {7, {1, 1}, 1} }
+			},
+			// ORANGE
+			{
+				{52, -1,-1,-1,  {1, {2,  5}, 1} },
+				{94, -1,-1,-1,  {2, {6, 10}, 2} },
+				{130, -1,-1,-1, {3, {6, 10}, 5} },
+				{166, -1,-1,-1, {4, {6, 10}, 7} },
+				{202, -1,-1,-1, {5, {6, 10}, 8} },
+				{208, -1,-1,-1, {6, {6, 10}, 7} },
+				{231, -1,-1,-1, {7, {2,  3}, 0} } // Simply too bright
+			},
+			// PURPLE
+			{
+				{60, -1,-1,-1,  {1, {1, 1}, 1} },
+				{61, -1,-1,-1,  {2, {1, 1}, 1} },
+				{62, -1,-1,-1,  {3, {1, 1}, 1} },
+				{63, -1,-1,-1,  {4, {1, 1}, 1} },
+				{69, -1,-1,-1,  {5, {1, 1}, 1} },
+				{111, -1,-1,-1, {6, {1, 1}, 1} },
+				{225, -1,-1,-1, {7, {1, 1}, 1} }
+			},
+			// VAPORWAVE
+			{
+				{53, -1,-1,-1,  {1, {6, 10}, 2} },
+				{54, -1,-1,-1,  {2, {6, 10}, 2} },
+				{55, -1,-1,-1,  {3, {6, 10}, 2} },
+				{134, -1,-1,-1, {4, {6, 10}, 2} },
+				{177, -1,-1,-1, {5, {6, 10}, 2} },
+				{219, -1,-1,-1, {6, {6, 10}, 2} },
+				{214, -1,-1,-1, {7, {6, 10}, 2} },
+				{220, -1,-1,-1, {8, {6, 10}, 2} },
+				{227, -1,-1,-1, {9, {6, 10}, 2} },
+				{229, -1,-1,-1, {10, {6, 10}, 1} },
+				{87, -1,-1,-1,  {11, {6, 10}, 1} },
+				{123, -1,-1,-1, {12, {6, 10}, 1} },
+				{159, -1,-1,-1, {13, {6, 10}, 1} },
+				{195, -1,-1,-1, {14, {6, 10}, 1} },
+				{231, -1,-1,-1, {15, {6, 10}, 1} },
+			},
+			// GRAY
+			{
+				{234, -1,-1,-1, {1, {6, 10}, 1} },
+				{237, -1,-1,-1, {2, {6, 10}, 1} },
+				{240, -1,-1,-1, {3, {6, 10}, 1} },
+				{243, -1,-1,-1, {4, {6, 10}, 1} },
+				{246, -1,-1,-1, {5, {6, 10}, 1} },
+				{249, -1,-1,-1, {6, {6, 10}, 1} },
+				{251, -1,-1,-1, {7, {6, 10}, 1} },
+				{252, -1,-1,-1, {8, {6, 10}, 1} },
+				{231, -1,-1,-1, {9, {6, 10}, 1} },
+			}
+		};
+		/* Cursor colors corresponding to their schemes */
+		std::vector<std::vector<unsigned char>> curcols =
+		{
+			// GREEN
+			{68, 244, 167},
+			// GOLD
+			{188, 120, 12},
+			// YELLOW
+			{255, 255, 0},
+			// RAINBOW
+			{227, 67, 255},
+			// RED
+			{187, 4, 31},
+			// BLUE
+			{0, 0, 255},
+			// CYAN
+			{22, 158, 188},
+			// ORANGE
+			{180, 119, 20},
+			// PURPLE
+			{58, 39, 206},
+			// VAPORWAVE
+			{130, 97, 180},
+			// GRAY
+			{97, 102, 103}
+		};
+};
+
+class Util
+{
+	private:
+		// Convert a base 16 digit to it's base 10 equivalent
+		int sixteen_to_ten(char ten_str);
+	public:
+		template <typename T>
+		int veccmp(T to_comp, std::vector<T> vec)
+		{
+			for (long unsigned int i = 0; i<vec.size(); i++)
+			{
+				if (to_comp == vec[i])
+					return i;
+			}
+			return ERROR;
+		}
+		/* I know, this makes an unordered_map a lil 
+		 * stupid but the performance hit is minimal
+		 * and I don't care enough to reengineer with
+		 * an std::pair or something
+		 */
+		template <typename A, typename T>
+		A valtokey(std::unordered_map<A, T> map, T val)
+		{
+			for (auto i = map.begin(); i != map.end(); i++)
+			{
+				if (i->second == val)
+					return i->first;
+			}
+			return nullptr;
+		}
+		bool is_number(std::string string);
+		std::vector<unsigned char> hextorgb(std::string hex);
+		std::vector<std::string> split_at
+			(std::string splitchar, std::string input);
+		int random_int(int min, int max);
+		std::string to_lower(std::string input);
+};
+
+#define INVERT(X)	X ? X = false : X = true;
+
+void Args::process(int argc, char* argv[])
+{
+	for (int i = 1; i<argc; i++)
+	{
+		Util util;
+		int match = util.veccmp<std::string>(std::string(argv[i]), switches);
+		switch (match)
+		{
+			case 0: case 1: // -f, --scrollfile
+				if (process_file(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("file");
+					exit(1);
+				}
+				break;
+			case 2: // --until
+				if (process_until(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("until");
+					exit(1);
+				}
+				break;
+			case 3: case 4: // -l, --limit
+				if (process_limit(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("limit");
+					exit(1);
+				}
+				break;
+			case 5: // --spacing
+				if (process_spacing(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("spacing");
+					exit(1);
+				}
+				break;
+			case 6: // --forcedraw
+				INVERT(forcedraw);
+				break;
+			case 7: case 8: // -T, --theme
+				if (process_theme(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("theme");
+					exit(1);
+				}
+				break;
+			case 9: case 10: // -F, --colorfile
+			{
+				int ret = process_custom_theme(i, argc, argv);
+				if (ret == -1)
+				{
+					std::cout << "The given colorfile could not be read"
+						<< "Please check file permissions, ownership "
+						<< "and existence." << std::endl;
+					exit(1);
+				}
+				else if (ret == ERROR)
+				{
+					std::cout << err_msgs.at("colorfile");
+					exit(1);
+				}
+				else if (ret != 0)
+				{
+					std::cout << "The given colorfile is invalid near "
+						<< "line " C_GREEN_U << ret << C_OFF << "." << std::endl
+						<< "\tHere is the info entry for colorfiles:" << std::endl
+						<< err_msgs.at("colorfile");
+					exit(1);
+				}
+				break;
+			}
+			case 11: case 12: // -B, --background
+				if (process_background(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("background");
+					exit(1);
+				}
+				break;
+			case 13: case 14: // -C, --cursor
+				switch(process_cursor(i, argc, argv))
+				{
+					case 0:
+						break;
+					case 1:
+						std::cout << "The RED part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case 2:
+						std::cout << "The GREEN part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case 3:
+						std::cout << "The BLUE part of the hex code you provided is invalid.\n"
+							<< "It has to be either the numbers 0-9 or one of the letters "
+							<< "\"abcdef\" uppercase or lowercase."
+							<< std::endl;
+						exit(1);
+						break;
+					case 255:
+						std::cout << "If you tried to enter an RGB value, you have to give three numbers between 0 and 256,\n"
+							<< "separated by commata, enclosed in quotes, like this:\n" 
+							<< C_GREEN_U << "\tvain -C \"0, 255, 0\"" << C_OFF << std::endl;
+						exit(1);
+						break;
+					case 16: case ERROR:
+						std::cout << err_msgs.at("cursor");
+						exit(1);
+						break;
+				}
+				break;
+			case 15: case 16: // -c, --no-show-cursor
+				INVERT(show_cursor);
+				break;
+			case 17: case 18: // -b, --movement-behaviour
+				if (process_behaviour(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("behaviour") << std::endl;
+					exit(1);
+				}
+				break;
+			case 19: case 20: // -s, --movement-style
+				if (process_style(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("style") << std::endl;
+					exit(1);
+				}
+				break;
+			case 21: case 22: // -S, --movement-speed
+				if (process_speed(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("speed") << std::endl;
+					exit(1);
+				}
+				break;
+			case 23: case 24: // -d, --movement-delay
+				if (process_auto_delay(i, argc, argv) == ERROR)
+				{
+					std::cout << err_msgs.at("delay") << std::endl;
+					exit(1);
+				}
+				break;
+			case 25: // --debug (UNUSED)
+				break;
+			case 26: // --dry
+				INVERT(dry);
+				break;
+			case 27: case 28: // -h, --help
+				show_help();
+				exit(1);
+				break;
+			default:
+				std::cout << "Invalid argument \"" << argv[i] << "\"!" << std::endl
+					<< "\tDo '" << C_GREEN_U << "vain --help" << C_OFF 
+						<< "' for info on how to use vainglorious!" << std::endl;
+				exit(1);
+				break;
+		}
+	}
+}
+
+void Args::makepairs()
+{
+	// Make background color
+	init_color(0, bg_col[0], bg_col[1], bg_col[2]);
+	DefTheme thm;
+	for (int cols = 0; cols<get_theme().size(); cols++)
+	{
+		Color my_color = get_theme()[cols];
+		/* If the given RGB value is invalid, init_color
+		 * just doesn't change the color which enables
+		 * setting colors of default pairs through just the
+		 * same system as custom RGB colors in theme.h
+		 */
+		init_color(my_color.id, my_color.R, my_color.G, my_color.B);
+		init_pair(my_color.pair_prob.pair_id, my_color.id, 0);
+	}
+}
+
+int Args::process_file(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	file = argv[i];
+	return 0;
+}
+
+int Args::process_limit(int &i, int argc, char* argv[])
+{
+
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	if (atoi(argv[i]) < 1)
+		limit = 1;
+	else
+		limit = atoi(argv[i]);
+	return 0;
+}
+
+int Args::process_theme(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	DefTheme thm;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), 
+			thm.get_themenames());
+	if (match != ERROR)
+	{
+		themeid = match;
+		return 0;
+	}
+	if (util.is_number(std::string(argv[i])))
+	{
+		int num = atoi(argv[i]);
+		if (num >= 0 && num < thm.get_themenames().size()) 
+		{
+			themeid = num;
+			return 0;
+		}
+	}
+	return ERROR;
+}
+
+int Args::process_custom_theme(int &i, int argc, char* argv[])
+{
+	// Get colorfile name
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	std::string name = std::string(argv[i]);
+	std::ifstream cfile(name);
+	if (!cfile.is_open())
+		return -1; // File is unknown
+	
+	// Set themeid to -1 to mark that the theem used is
+	// not to be found in DefTheme objects
+	themeid = -1;
+	
+	// Parse colorfile
+	int lnum = 0;
+	std::string line;
+	while (getline(cfile, line))
+	{
+		
+		// Discard line from a '%'(comment) sign on
+		for (int i = 0; i<line.size(); i++)
+		{
+			if (line[i] == '%')
+			{
+				line = line.substr(0, i);
+				break;
+			}
+		}
+		 
+		if (line.empty())
+		{
+			lnum++;
+			continue;
+		}
+		 
+		 
+		Util util;
+		std::vector<std::string> spl = util.split_at(",", line);
+		bool hex = false;
+		if (spl[0][0] == '#')
+			hex = true;
+		if (!hex && spl.size() < 3) // Can't contain RGB value
+			return lnum+1;
+		std::vector<unsigned char> rgbval;
+		try
+		{
+			if (hex)
+				rgbval = unify_color_input(spl[0]);
+			else
+				rgbval = unify_color_input(spl[0] + "," + spl[1] + "," + spl[2]);
+		}
+		catch (int e)
+		{
+			return lnum+1;
+		}
+		 
+		// First line is background color
+		if (lnum == 0)
+		{
+			bg_col = {int(rgbval[0]*NCFAC), int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC)};
+			lnum++;
+			continue;
+		}
+		
+		// Determine min, max and probability
+		int min = 1, max = 1, prob = 1;
+		if (hex && spl.size() >= 3)
+		{
+			min = std::stoi(spl[1]);
+			max = std::stoi(spl[2]);
+			if (spl.size() > 4)
+				prob = std::stoi(spl[3]);
+		}
+		else if (spl.size() >= 5)
+		{
+			min = std::stoi(spl[3]);
+			max = std::stoi(spl[4]);
+			if (spl.size() > 6)
+				prob = std::stoi(spl[5]);
+		}
+		
+		// Switch around min and max if they are mixed up
+		if (min > max)
+		{
+			int orig_max = max;
+			max = min;
+			min = orig_max;
+		}
+		 
+		// Construct final color
+		Color this_col = 
+			{lnum+35, 
+				int(rgbval[0]*NCFAC), int(rgbval[1]*NCFAC), int(rgbval[2]*NCFAC),
+				{lnum+1, {min, max}, prob}};
+		custom_theme.push_back(this_col); // Push it to the theme
+		lnum++;
+	}
+	cfile.close();
+	return 0;
+}
+
+int Args::process_background(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+
+	std::string input = std::string(argv[i]);
+	std::vector<unsigned char> ret;
+	try
+	{
+		ret = unify_color_input(input);
+	}
+	catch (int e)
+	{
+		return e;
+	}
+	bg_col[0] = ret[0]*NCFAC;
+	bg_col[1] = ret[1]*NCFAC;
+	bg_col[2] = ret[2]*NCFAC;
+	return 0;
+}
+
+int Args::process_cursor(int &i, int argc, char* argv[])
+{
+	 
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	std::string input = std::string(argv[i]);
+	std::vector<unsigned char> ret;
+	try
+	{
+		ret = unify_color_input(input); 
+	}
+	catch (int e)
+	{
+		return e; // Errors are handled by process_args itself
+	}
+	custom_cur = ret;
+	return 0;
+}
+
+std::vector<unsigned char> Args::unify_color_input(std::string input)
+{
+	Util util;
+	DefTheme thm;
+	std::vector<std::string> tnames= thm.get_themenames();
+	 
+	/* Check if a theme name or id is provided */
+	int match = 0;
+	if (util.is_number(input))
+		match = std::stoi(input);
+	else
+		match = util.veccmp<std::string>(input, tnames);
+	 
+	if (match != ERROR)
+	{
+		if (match < tnames.size() && match >= 0)
+		{
+			return thm.get_curcol(match); 
+		}
+	}
+	 
+	/* Check if a RGB value is provided (like "0,255,0") */
+	std::vector<std::string> rgb = util.split_at(", ", input);
+	if (rgb.size() == 3)
+	{
+		// TODO
+		std::vector<unsigned char> rgbvals;
+		for (int i = 0; i<3; i++)
+		{
+			int rgbval = 0;
+			try
+			{
+				rgbval = std::stoi(rgb[i]);
+			}
+			catch (std::invalid_argument& e)
+			{
+				throw 255;
+			}
+			 
+			if (rgbval >= 0 && rgbval <= 255)
+				rgbvals.push_back(rgbval);
+			else
+				throw 255;
+		}
+		return rgbvals;
+	}
+	 
+	/* Check if a HEX value is provided (like "#00ff00") */
+	if (input.find('#') == 0)
+	{
+		if (input.size() == 7)
+		{
+			std::vector<unsigned char> curcol;
+			try
+			{
+				curcol = util.hextorgb(input);
+			}
+			catch (int e)
+			{
+				// Invalidate input
+				custom_cur = {};
+				switch (e)
+				{
+					case 1:
+						throw 1;
+						break;
+					case 2:
+						throw 2;
+						break;
+					case 3:
+						throw 3;
+						break;
+				}
+				throw 16;
+			}
+			return curcol;
+		}
+	}
+	throw ERROR;
+}
+
+int Args::process_until(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	read_until = atoi(argv[i]);
+	return 0;
+}
+
+int Args::process_spacing(int &i, int argc, char * argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	spacing = atoi(argv[i]);
+	return 0;
+}
+
+std::vector<Color> Args::get_theme()
+{
+	std::vector<Color> ret;
+	if (custom_theme.size() == 0)
+	{
+		DefTheme thm;
+		ret = thm.get_theme(themeid);
+	}
+	else
+	{
+		ret = custom_theme;
+	}
+	return ret;
+}
+
+std::vector<unsigned char> Args::get_curtheme()
+{
+	DefTheme thm;
+	if (custom_cur.size() == 0)
+		return thm.get_curcol(themeid);
+	else
+		return custom_cur;
+}
+
+
+int Args::process_behaviour(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"input", "auto"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: behaviour = INPUT; break;
+		case 1: behaviour = AUTO; break;
+	}
+	return 0;
+}
+
+int Args::process_style(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	int match = util.veccmp<std::string>(util.to_lower(std::string(argv[i])), {"line", "word", "character", "block"});
+	if (match == ERROR)
+		return ERROR;
+	switch(match)
+	{
+		case 0: style = LINE; break;
+		case 1: style = WORD; break;
+		case 2: style = CHARACTER; break;
+		case 3: style = BLOCK; break;
+	}
+	return 0;
+}
+
+int Args::process_speed(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	int ipt = atoi(argv[i]);
+	if (ipt < 0)
+		return ERROR;
+	speed = ipt;
+	return 0;
+}
+
+int Args::process_auto_delay(int &i, int argc, char* argv[])
+{
+	i++;
+	if (i > argc-1)
+		return ERROR;
+	Util util;
+	if (!util.is_number(std::string(argv[i])))
+		return ERROR;
+	float ipt = float(atof(argv[i]));
+	if (ipt < 0)
+		return ERROR;
+	auto_delay = ipt;
+	return 0;
+}
+
+void Args::show_help()
+{
+	std::cout 
+		<< "vainglorious - a feature-rich \"hacking\" simulator for your terminal\n"
+		<< "Usage: vain [options...]"
+		<< "\n"
+		<< "\n"
+		<< "OPTIONS\n"
+		<< "\n"
+		<< "Vainglorious features 14 distinct properties to edit\n"
+		<< "that open possibilities like making your own text to type,\n"
+		<< "custom themes, customizable scroll behaviours and much more\n"
+		<< "Detailed showcase of every (relevant) flag:\n"
+		<< "\n"
+		<< C_RED_U << "Formatting 1337 CODE:\n" << C_OFF
+		<< err_msgs.at("file")
+		<< err_msgs.at("until")
+		<< err_msgs.at("limit")
+		<< err_msgs.at("spacing")
+		<< err_msgs.at("forcedraw")
+		<< "\n"
+		<< C_RED_U << "Making it COLORFUL:\n" << C_OFF
+		<< err_msgs.at("theme")
+		<< err_msgs.at("colorfile")
+		<< err_msgs.at("background")
+		<< err_msgs.at("cursor")
+		<< err_msgs.at("no-show-cursor")
+		<< "\n"
+		<< C_RED_U << "Changing the HEAT:\n" << C_OFF
+		<< err_msgs.at("behaviour")
+		<< err_msgs.at("style")
+		<< err_msgs.at("speed")
+		<< err_msgs.at("delay")
+		<< "\n"
+		<< C_RED_U << "Popping the HOOD:\n" << C_OFF
+		<< err_msgs.at("dry")
+		<< err_msgs.at("help")
+		<< "\n"
+		<< "Have fun using vainglorious! May your friends be frightened ;)!\n"
+		<< "(Find this project under https://github.com/Dangertech/vainglorious)\n"
+		<< "Written by Kjell Nagel <dangertech@e.email>\n"
+		;
+}
+
+int File::crunch_file(Args my_args)
+{
+	std::ifstream scroll;
+	scroll.open(my_args.get_file());
+	if (!scroll.is_open())
+		return ERROR;
+	std::string cur_line;
+	int lnum = 1;
+	std::vector<std::string> cur_block;
+	while (getline(scroll, cur_line))
+	{
+		if (my_args.get_read_until() != -1 && lnum > my_args.get_read_until())
+			break;
+		if (cur_line == "") // Block finished, push!
+		{
+			if (cur_block.size() > 0)
+				blocks.push_back(cur_block);
+			cur_block.clear();
+		}
+		else
+		{
+			cur_block.push_back(cur_line);
+		}
+		lnum++;
+	}
+	// Push the last block before EOF
+	if (cur_block.size() > 0)
+		blocks.push_back(cur_block);
+	scroll.close();
+	return 0;
+}
+
+std::vector<std::string> File::rblock()
+{
+	srand(time(0) + roff);
+	int cho = rand()%blocks.size();
+	roff++;
+	return blocks[cho];
+}
+
+Args args;
+File scrollfile;
+Render render;
+
+int main(int argc, char* argv[])
+{
+	// Process Arguments
+	std::cout << "Processing Arguments..." << std::endl;
+	args.process(argc, argv);
+	 
+	// Crunch through scrollfile
+	std::cout << "Target Scroll File Is: " << args.get_file() << std::endl;
+	std::cout << "Crunching through Scroll file...";
+	if (scrollfile.crunch_file(args) == ERROR)
+	{
+		std::cout << "Error opening scroll! Please check file ownership!" << std::endl;
+		return 1;
+	}
+	std::cout << "Done!" << std::endl;
+	std::cout << "Total blocks found: " << scrollfile.get_blocks().size() << std::endl;
+	 
+	 
+	// Check if dry run was specified
+	if (args.get_dry())
+	{
+		std::cout << "Dry run, exiting!" << std::endl;
+		return 5;
+	}
+	std::cout << "Initializing Display..." << std::endl;
+	// initscr() starts here
+	if (render.run(args, scrollfile) == 0)
+	{
+		std::cout << "Exiting gracefully!" << std::endl;
+		return 0;
+	}
+	return ERR_UNKNOWN;
+}
+
+void Render::move_up()
+{
+	grid.erase(grid.begin());
+}
+
+void Render::add_char(char c, int c_pair)
+{
+	if (grid.size() == 0)
+		grid.push_back(std::vector<Cell>()); // Failsafe
+	
+	if (c != '\n')
+		grid[grid.size()-1].push_back(Cell(c, c_pair));
+	else
+	{
+		grid.push_back(std::vector<Cell>());
+	}
+	/* Actually, through this, there is
+	 * ALWAYS AN EMPTY NEW LINE at the end of the
+	 * text when a newline is cast from add_line(), for example
+	 */
+}
+
+void Render::change_cur_color(std::vector<unsigned char> rgb)
+{
+	printf("\e]12;#%.2x%.2x%.2x\a", rgb[0], rgb[1], rgb[2]);
+}
+
+Color Render::random_col(std::vector<Color> col_data)
+{
+	// Basically our seed without using the time
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	
+	// Get weights
+	std::vector<int> weights(col_data.size());
+	// Fill weights with defined weights from probability
+	for (int i = 0; i<col_data.size(); i++)
+		weights[i] = col_data[i].pair_prob.prob;
+	
+	std::discrete_distribution<> dist(weights.begin(), weights.end());
+	 
+	/* dist(gen) returns a color index according to the weights
+	 * The whole chosen color is returned
+	 */
+	return col_data[dist(gen)]; 
+}
+
+void Render::add_line(std::string line, std::vector<Color> col_data)
+{
+	if (grid.size())
+		add_char('\n', 1);
+	for (int i = 0; i<line.size(); i++)
+	{
+		add_colored_char(line[i], col_data);
+	}
+}
+
+void Render::add_colored_char(char c, std::vector<Color> col_data)
+{
+	// No more colors of the same type, assign a
+	// new color to hand out
+	if (streak_left == 0)
+	{
+		current_col = random_col(col_data);
+		// Get a random integer between second and first of app_length
+		Util util;
+		streak_left = util.random_int(current_col.pair_prob.app_length.first, 
+				current_col.pair_prob.app_length.second);
+	}
+	add_char(c, current_col.pair_prob.pair_id);
+	streak_left--;
+}
+
+void Render::render_grid()
+{
+	/* This is used to move the
+	 * cursor to the position before the
+	 * last newline character so that it really
+	 * looks like the cursor typed the lines/characters
+	 */
+	int lastxpos = 0;
+	 
+	move(0, 0);
+	for (int i = 0; i<grid.size(); i++)
+	{
+		for (int j = 0; j<grid[i].size(); j++)
+		{
+			if (getcurx(stdscr) > getmaxx(stdscr)-2)
+				break; // Stop rendering if text is beyond terminal bounds
+			attron(COLOR_PAIR(grid[i][j].col_id));
+			printw("%c", grid[i][j].c);
+			attroff(COLOR_PAIR(grid[i][j].col_id));
+			lastxpos = getcurx(stdscr);
+		}
+		// If the next line is empty,
+		// lastxpos isn't updated because
+		// the loop doesn't even run
+		if (grid[i].size() == 0)
+			lastxpos = getcurx(stdscr);
+		printw("\n");
+	}
+	// Prepare y pos for cursor
+	int lastypos = grid.size()-1;
+	move(lastypos, lastxpos); // move cursor
+}
+
+void Render::cleardraw()
+{
+	for (int y = 0; y<getmaxy(stdscr); y++)
+	{
+		move(y, 0);
+		for (int x = 0; x<getmaxx(stdscr); x++)
+		{
+			printw(" ");
+		}
+	}
+	move(0, 0);
+}
+
+int Render::run(Args my_args, File my_scroll)
+{
+	std::vector<Color> theme = my_args.get_theme();
+	/* Set cursor color
+	 * This has to be done before initscr() is called
+	 */
+	change_cur_color(my_args.get_curtheme());
+	 
+	initscr();
+	noecho(); // Turn off printing of pressed character
+	if (my_args.get_behaviour() == AUTO)
+		nodelay(stdscr, true);
+	start_color(); // Use Colors
+	// Disable cursor in case of -c
+	if (!my_args.get_show_cursor())
+		curs_set(0);
+	 
+	// Init colors
+	my_args.makepairs();
+	/* Draw everything once to set the background everywhere
+	 * bkgd() or wbkgd() alone leaves a column black at the right 
+	 * side of my terminal for some reason
+	 */
+	cleardraw();
+	 
+	int ch;
+	std::vector<std::string> myblock;
+	// Lines into a block
+	int lines = 0;
+	// Characters into a line on a block
+	int chars = 0;
+	/* If to_space is 0, everything
+	 * runs normally, lines of blocks
+	 * get added; If it's not 0, an empty line
+	 * is inserted instead and to_space is decreased
+	 * by one
+	 */
+	int to_space = 0;
+	/* To avoid spacing on the first block to appear */
+	bool first_space = true;
+	 
+	while (1)
+	{
+		// Wait for continuation
+		// (or don't because nodelay() is set if behaviour is AUTO
+		ch = getch();
+		if (ch == 4) // CTRL-D
+			break;
+		else if (ch == 12) // CTRL-L
+		{
+			cleardraw();
+			render_grid();
+		}
+		if (my_args.get_behaviour() == AUTO)
+		{
+			bool break_outer = false;
+			using namespace std::chrono;
+			high_resolution_clock::time_point begin = 
+					high_resolution_clock::now();
+			high_resolution_clock::time_point now = 
+					high_resolution_clock::now();
+			while (duration_cast<duration<double>>(now-begin).count() 
+					< my_args.get_auto_delay())
+			{
+				now = high_resolution_clock::now();
+				ch = getch();
+				if (ch == 4) // CTRL-D
+				{
+					break_outer = true;
+					break;
+				}
+				else if (ch == 12) // CTRL-L
+				{
+					cleardraw();
+					render_grid();
+				}
+			}
+			if (break_outer)
+				break;
+		}
+		 
+		// Place new characters and render them
+		// If there's something to space, enter a new line instead!
+			/* Blocks are an exception:
+			 * When enabled, the spacing is
+			 * run the same input as the rest
+			 * of the block to not interrupt the flow
+			 */
+		for (int times = 0; times < my_args.get_speed(); times++)
+		{
+			// Setup blocks
+			
+			/* If everything in the block has been used,
+			 * set new block and reset blockpos
+			 */
+			if (lines >= myblock.size())
+			{
+				myblock = my_scroll.rblock();
+				lines = 0;
+				// "Query" the spacing
+				if (first_space)
+					first_space = false;
+				else
+					to_space = my_args.get_spacing();
+			}
+			if (to_space == 0 || my_args.get_style() == BLOCK)
+			{
+				switch(my_args.get_style())
+				{
+					case LINE:
+						add_line(myblock[lines].c_str(), theme);
+						lines++;
+						break;
+					case WORD:
+						while (myblock[lines][chars] != ' ')
+						{
+							add_colored_char(myblock[lines][chars], theme);
+							chars++;
+							if (chars >= myblock[lines].size())
+							{
+								chars = 0;
+								add_char('\n', 1);
+								lines++;
+								// Fill up to the next real character
+								if (lines < myblock.size())
+								{
+									while (myblock[lines][chars] == '\t')
+									{
+										add_char(myblock[lines][chars], 1);
+										chars++;
+									}
+								}
+								// Ensure at least one input per line
+								break;
+							}
+						}
+						if (lines < myblock.size())
+						{
+							while(myblock[lines][chars] == ' ')
+							{
+								add_colored_char(myblock[lines][chars], theme);
+								chars++;
+							}
+						}
+						break;
+					case CHARACTER:
+						// Skip tabs (User doesn't have to press keys for them)
+						while (myblock[lines][chars] == '\t')
+						{
+							add_char(myblock[lines][chars], 1); 
+							chars++;
+						}
+						add_colored_char(myblock[lines][chars], theme);
+						chars++;
+						// Break new line
+						if (chars >= myblock[lines].size())
+						{
+							chars = 0;
+							add_char('\n', 1);
+							lines++;
+						}
+						break;
+					case BLOCK:
+						// Do the spacing first
+						while(to_space > 0)
+						{
+							add_char('\n', 1);
+							to_space--;
+						}
+						for (int i = 0; i<myblock.size(); i++)
+						{
+							for (int j = 0; j<myblock[i].size(); j++)
+							{
+								add_colored_char(myblock[i][j], theme);
+							}
+							add_char('\n', 1);
+						}
+						// Move up
+						int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+						while (grid.size() > scrlimit)
+							move_up();
+						// Overflow the lines so a new block is assigned next input
+						lines = myblock.size()+1;
+						break;
+				}
+			}
+			else
+				add_char('\n', 1);
+			 
+			// Start moving up when the text has advanced far enough
+			int scrlimit = getmaxy(stdscr)-my_args.get_limit();
+			if (scrlimit < 0)
+				scrlimit = 0;
+			if (grid.size() > scrlimit)
+				move_up();
+			 
+			// to_space management
+			 
+			if (to_space > 0)
+				to_space--;
+		}
+		
+		// Clear the screen every time something happens
+		if (my_args.get_forcedraw())
+			cleardraw();
+		render_grid(); // Render dat shit!
+	}
+	endwin();
+	// Reset cursor color
+	change_cur_color({255, 255, 255});
+	return 0;
+}
+
+std::vector<Color> DefTheme::get_theme(int theme_id)
+{
+	if (theme_id < themecols.size())
+		return themecols[theme_id];
+	else
+		return themecols[0];
+}
+
+std::vector<unsigned char> DefTheme::get_curcol(int theme_id)
+{
+	if (theme_id < curcols.size())
+		return curcols[theme_id];
+	else
+		return curcols[0];
+}
+
+int Util::sixteen_to_ten(char ten_str)
+{
+	ten_str = tolower(ten_str);
+	if(isalpha(ten_str))
+	{
+		if (ten_str < 103)
+			return ten_str-87;
+		else
+			// That's more than an f and not a hex code
+			return ERROR;
+	}
+	else
+		return ten_str-48;
+}
+
+bool Util::is_number(std::string string)
+{
+	for (int i = 0; i<string.size(); i++)
+	{
+		if (!std::isdigit(string[i]))
+		{
+			if (string[i] != '.')
+				return false;
+		}
+	}
+	return true;
+}
+
+std::vector<unsigned char> Util::hextorgb(std::string hex)
+{
+	std::vector<unsigned char> ret;
+	int red = sixteen_to_ten(hex[1])*16 + sixteen_to_ten(hex[2]);
+	if (red >= 0 && red <= 255)
+		ret.push_back(red);
+	else
+		throw 1;
+	int green = sixteen_to_ten(hex[3])*16 + sixteen_to_ten(hex[4]);
+	if (green >= 0 && green <= 255)
+		ret.push_back(green);
+	else
+		throw 2;
+	int blue = sixteen_to_ten(hex[5])*16 + sixteen_to_ten(hex[6]);
+	if (blue >= 0 && blue <= 255)
+		ret.push_back(blue);
+	else
+		throw 3;
+	return ret;
+}
+
+std::vector<std::string> 
+Util::split_at(std::string splitchar, std::string input)
+{
+	std::vector<std::string> ret;
+	int pointer = 0;
+	 
+	std::string temp;
+	while (1 == 1)
+	{
+		while (input[pointer] != splitchar[0])
+		{
+			if (pointer >= input.size())
+			{
+				if (temp.size())
+					ret.push_back(temp);
+				return ret;
+			}
+			temp += input[pointer];
+			pointer++;
+		}
+		ret.push_back(temp);
+		temp = "";
+		int spoint = 0;
+		while (splitchar[spoint] == input[pointer])
+		{
+			spoint++;
+			pointer++;
+		}
+	}
+}
+
+int Util::random_int(int min, int max)
+{
+	// Seeder
+	std::random_device rd;
+	 
+	std::mt19937 gen(rd());
+	 
+	std::uniform_int_distribution<int> dist(min, max);
+	 
+	return dist(gen);
+}
+
+std::string Util::to_lower(std::string input)
+{
+	std::string lower;
+	for (int i = 0; i<input.size(); i++)
+	{
+		lower += std::tolower(input[i]);
+	}
+	return lower;
+}
+
+void Args::handle_tag(int &arg_pos, int argc, char * argv[])
+{
+	arg_pos++;
+	tag = argv[arg_pos];
+}
+
+void Args::handle_dest(int &arg_pos, int argc, char * argv[])
+{
+	arg_pos++;
+	set_dest = argv[arg_pos];
+}
+
+void Args::show_help()
+{
+	std::cout
+		<< "Usage: userlog [OPTIONS] MESSAGE\n"
+		<< "An easy-to-use logger for human beings\n"
+		<< "\n"
+		<< "OPTIONs:\n"
+		<< "    --tag/-t TAG(s)     Puts the given tags in square brackets in front of your message\n"
+		<< "    --help/-h           Shows this help text and then terminates the program\n"
+		<< "    --dest/-d           Set your own destination for this log entry\n"
+		<< "                            If the path doesn't fully exist, userlog will try to create it\n"
+		<< "\n"
+		<< "EXIT CODES:\n"
+		<< "    0                   userlog only returns 0 if a message was written to the log file.\n"
+		<< "    1                   This help text was shown\n"
+		<< "    2                   The log destination couldn't be opened;\n"
+		<< "                            Check if userlog has the sufficient privileges to write to it\n"
+		<< "    3                   No message was given\n"
+		<< "\n"    
+		<< "You can choose the directory in which userlog puts the logs at compile time by changing\n"
+		<< "the variable 'LOG_LOC' at the top of the Makefile and issuing 'sudo make install' again.\n"
+		<< "The default is '/var/log/userlog/'\n"
+		<< "\n"
+		<< "Additional info and instructions can be found at: <https://github.com/Dangertech/userlog>\n"
+		<< "Written by Kjell Nagel, student at STAMA, Bad Kreuznach, Germany\n"
+	;
+	exit(1);
+}
+
+void Args::process_args(int argc, char *argv[])
+{
+	for (int i = 1; i<argc; i++)
+	{
+		if (util.begmatch(argv[i], "--"))
+		{
+			int entry = util.veccmp<std::string>(std::string(argv[i]), lswitches);
+			switch(entry)
+			{
+				case 0: // --tag
+					handle_tag(i, argc, argv);
+					break;
+				case 1:
+					show_help();
+					break;
+				case 2: // --dest
+					handle_dest(i, argc, argv);
+					break;
+			}
+		}
+		else if (util.begmatch(argv[i], "-"))
+		{
+			int entry = util.veccmp<std::string>(std::string(argv[i]), sswitches);
+			switch(entry)
+			{
+				case 0: // -t
+					handle_tag(i, argc, argv);
+					break;
+				case 1:
+					show_help();
+					break;
+				case 2: // -d
+					handle_dest(i, argc, argv);
+					break;
+			}
+		}
+		else
+		{
+			/* Argument MUST be log content (at least right now) */
+			if (message == "")
+				message = argv[i];
+			else
+				std::cout << "userlog: Setting more than one message is not allowed;" << std::endl;
+		}
+	}
+}
+
+class Args
+{
+	private:
+		std::string message;
+		std::string tag;
+		std::string set_dest;
+		std::vector <std::string> lswitches =
+		{
+			"--tag",
+			"--help",
+			"--dest"
+		};
+		 
+		std::vector <std::string> sswitches =
+		{
+			"-t",
+			"-h",
+			"-d"
+		};
+		 
+		/* Argument handlers: Get attached arguments to argument and dispatch the
+		 * functions that solve them; Increase the position by the arguments you
+		 * processed
+		 */
+		void handle_tag(int &arg_pos, int argc, char * argv[]);
+		void handle_dest(int &arg_pos, int argc, char * argv[]);
+		void show_help();
+	public:
+		// Goes through all given arguments, called from main
+		void process_args(int argc, char *argv[]);
+		inline std::string get_message() { return message; };
+		inline std::string get_tag() { return tag; };
+		inline std::string get_set_dest() { return set_dest; };
+};
+
+std::string File::get_logdir(Time_data time)
+{
+	/* Take LOG_LOC as base */
+	std::string my_loc = LOG_LOC;
+	my_loc += "/" + std::to_string(time.get_component("year"));
+	my_loc += "/" + std::to_string(time.get_component("month"));
+	/* Gives something like:
+	 * /var/log/userlog/2022/0/
+	 * Log of the third of January 2022
+	 * Final logfile name (3.log) should be appended by File::get_logname()
+	 */
+	return my_loc;
+}
+
+std::string File::get_logname(Time_data time)
+{
+	return std::to_string(time.get_component("mday")) + ".log";
+}
+
+std::string File::format(Args my_arg, Time_data my_time)
+{
+	std::string str;
+	 
+	// Time
+	std::vector<std::string> time =
+	{
+		{std::to_string(my_time.get_component("hour"))},
+		{std::to_string(my_time.get_component("minute"))},
+		{std::to_string(my_time.get_component("second"))}
+	};
+	for (int i = 0; i<time.size(); i++)
+	{
+		if (time[i].size() < 2)
+			time[i].insert(0, "0");
+	}
+	str += "<" + time[0] + ":" + time[1] + ":" + time[2] + ">";
+	 
+	// Tags
+	if (my_arg.get_tag() != "")
+		str += " [" + my_arg.get_tag() + "]";
+	 
+	str += ": ";
+	 
+	// Message
+	str += my_arg.get_message();
+	return str; 
+}
+
+int File::make_dirs(std::string dir)
+{
+	std::vector<std::string> split = util.split(dir, '/');
+	std::string cur_path = "/" + split[1];
+	mkdir(cur_path.c_str(), 0777);
+	for (int i = 2; i<split.size(); i++)
+	{
+		/* Always try to make the directories, even if they exist
+		 * because it doesn't change anything,
+		 * mkdir() just silently fails
+		 */
+		cur_path += "/" + split[i];
+		mkdir(cur_path.c_str(), 0777);
+	}
+	return ERROR;
+}
+
+int File::write_entry(Args my_arg)
+{
+	if (my_arg.get_message() == "")
+		return ERR_NO_IPT;
+	std::string location;
+	if (my_arg.get_set_dest() == "")
+		location = get_logdir(systime) + "/" + get_logname(systime);
+	else
+		location = my_arg.get_set_dest();
+	/* Create needed directories */
+	make_dirs(get_logdir(systime));
+	/* Open File in append mode */
+	std::ofstream logfile(location, std::ios_base::app);
+	if (logfile.is_open())
+	{
+		/* Write! */
+		logfile << format(my_arg, systime) << std::endl;
+	}
+	else
+		return ERROR;
+	logfile.close();
+	return 0;
+}
+
+class File
+{
+	private:
+		std::string get_logdir(Time_data time); // /var/log/userlog/2022/0
+		std::string get_logname(Time_data time); // 27.log
+		/* Format the stuff in the argument to the format in which they
+		 * appear in the log
+		 */
+		std::string format(Args my_arg, Time_data my_time);
+		/* Make as many directories as needed to 
+		 * make the specified dir possible, e.g:
+		 * make_dirs("/home/username/dir_one/dir_two/dir_three")
+		 * -> Provided that dir_two and dir_three don't exist yet, create them
+		 */
+		int make_dirs(std::string dir);
+	public:
+		// Write the entry to a file
+		int write_entry(Args my_arg);
+};
+
+int main(int argc, char *argv[])
+{
+	systime.set_current_time();
+	args.process_args(argc, argv);
+	int opout = file.write_entry(args); // Write to the log
+	switch(opout)
+	{
+		case 0:
+			return 0;
+			break;
+		case ERROR:
+			if (args.get_set_dest() == "")
+				std::cout << "userlog: Couldn't open log file! Please check the privileges of your userlog location: " << LOG_LOC << std::endl;
+			else
+				std::cout << "userlog: The set destination file is not writable! This file could not be accessed: " << args.get_set_dest() << std::endl;
+			return 2;
+		case ERR_NO_IPT:
+			std::cout << "userlog: A message is required" << std::endl;
+			return 3;
+			break;
+	}
+	return 0;
+}
+
+void Time_data::set_current_time()
+{
+	time_t epoch = time(NULL);
+	struct tm *s = localtime(&epoch);
+	
+	year = s->tm_year + 1900; // Gives year since 1900, so add those
+	month = s->tm_mon;
+	mday = s->tm_mday;
+	hour = s->tm_hour;
+	minute = s->tm_min;
+	second = s->tm_sec;
+}
+
+int Time_data::get_component(std::string cname)
+{
+	std::vector<std::string> poss = {"year", "month", "mday", "hour", "minute", "second"};
+	int val = util.veccmp<std::string>(cname, poss);
+	 
+	switch (val)
+	{
+		case 0:
+			return year;
+		case 1:
+			return month;
+		case 2:
+			return mday;
+		case 3:
+			return hour;
+		case 4: 
+			return minute;
+		case 5:
+			return second;
+		case ERROR:
+			return ERROR;
+	}
+	return ERROR;
+}
+
+
+class Time_data
+{
+	private:
+		int year;
+		int month;
+		int mday; // from 0 to 31
+		int hour; 
+		int minute;
+		int second;
+	public:
+		void set_current_time();
+		 
+		int get_component(std::string component);
+		/* Get the components of the time_data:
+		 * "year", "month", "mday", "hour", "minute", "second"
+		 */
+} extern systime;
+
+bool Util::begmatch(const char* to_comp, const char* against)
+{
+	if (strncmp(to_comp, against, strlen(against)) == 0)
+		return true;
+	return false;
+}
+
+std::vector<std::string> Util::split(std::string input, char breaker, 
+		bool exclude_breaker /*= true*//*, bool right_breaker /*= false*/)
+{
+	std::vector<std::string> splitvec;
+	std::vector<int> marks = {-1}; // Pos 0 is the first breaker
+	/* Get marks on where to break up */
+	for (long unsigned int i = 0; i<input.size()-1; i++)
+	{
+		if (input[i] == breaker)
+			marks.push_back(i); 
+	}
+	marks.push_back(input.size());
+	/* Put the stuff along the marks into the splitvec */
+	for (long unsigned int i = 1; i<marks.size(); i++)
+	{
+		std::string part;
+		for (long unsigned int j = marks[i-1]+exclude_breaker; j<marks[i]; j++)
+		{
+			part += input[j];
+		}
+		splitvec.push_back(part);
+	}
+	return splitvec;
+}
+
+class Util
+{
+	public:
+		/* Output the location of a variable in a vector of variables
+		 * Return ERROR if it isn't contained within
+		 */
+		template <typename T>
+		int veccmp(T to_comp, std::vector<T> vec) 
+		{
+			for (long unsigned int i = 0; i<vec.size(); i++)
+			{
+				if (to_comp == vec[i])
+					return i;
+			}
+			return ERROR;
+		}
+
+		std::vector<std::string> split(std::string input, char breaker, 
+				bool exclude_breaker = true/*, bool right_breaker = false*/);
+		 
+		// Match against the beginning of a string: Is against at the beginning of to_comp?
+		bool begmatch(const char* to_comp, const char* against);
+} extern util;
+

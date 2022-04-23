@@ -531,6 +531,7 @@ int Args::process_behaviour(int &i, int argc, char* argv[])
 	}
 	return 0;
 }
+
 int Args::process_style(int &i, int argc, char* argv[])
 {
 	i++;
@@ -549,6 +550,7 @@ int Args::process_style(int &i, int argc, char* argv[])
 	}
 	return 0;
 }
+
 int Args::process_speed(int &i, int argc, char* argv[])
 {
 	i++;
@@ -563,6 +565,7 @@ int Args::process_speed(int &i, int argc, char* argv[])
 	speed = ipt;
 	return 0;
 }
+
 int Args::process_auto_delay(int &i, int argc, char* argv[])
 {
 	i++;
