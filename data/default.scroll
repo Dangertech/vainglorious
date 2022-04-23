@@ -1098,7 +1098,7 @@ int Args::process_background(int &i, int argc, char* argv[])
 	i++;
 	if (i > argc-1)
 		return ERROR;
-
+	
 	std::string input = std::string(argv[i]);
 	std::vector<unsigned char> ret;
 	try
