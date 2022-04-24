@@ -319,7 +319,7 @@ int Render::run(Args my_args, File my_scroll)
 			int scrlimit = getmaxy(stdscr)-my_args.get_limit();
 			if (scrlimit < 0)
 				scrlimit = 0;
-			if (grid.size() > scrlimit)
+			while (grid.size() > scrlimit)
 				move_up();
 			 
 			// to_space management
