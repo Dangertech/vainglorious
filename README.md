@@ -46,7 +46,19 @@ Example:
 #3c345c, 2, 3, 1
 ```
 
+### Buttons
+There are two special key combinations:
+- `CTRL-D` to exit vainglorious
+- `CTRL-L` to refresh the screen and clear eventual artifacts
+
 ## Installation
+Only GNU/Linux systems are supported, but you should be able to compile on other operating systems with some changes too.
+
+### Requirements
+- g++
+- ncurses development libraries (often called `ncurses-dev` or `ncurses-devel` in binary package managers)
+- watch out, you might need to add `EXTRAS="-ltinfo"` to the `make` commands on some distributions.
+
 Straightforward, as with pretty much every project with a makefile:
 
 ```
