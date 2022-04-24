@@ -1,7 +1,7 @@
 # vainglorious
 *A feature-rich "hacking" simulator for your terminal*
 
-![](https://media0.giphy.com/media/fZe4mbL93LfxbNwtpE/giphy-downsized-medium.gif?cid=fbf3ecf85a15561cf8454003c35249ce78b69bd0c9de56e7&rid=giphy-downsized-medium.gif&ct=g)
+![](https://media1.giphy.com/media/fZe4mbL93LfxbNwtpE/giphy-downsized-medium.gif?cid=fbf3ecf840c76d7334bb3cda319afed162e22aea9ed3b1b5&rid=giphy-downsized-medium.gif&ct=g)
 
 Do you know [hackertyper.net](https://hackertyper.net)? The website that let's you look "cool", let's you look
 like you're infiltrating the network, hacking the mainframe, like you just "got in"? Yeah, I know, it's for children.
