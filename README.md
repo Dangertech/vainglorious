@@ -59,7 +59,8 @@ Only GNU/Linux systems are supported, but you should be able to compile on other
 - ncurses development libraries (often called `ncurses-dev` or `ncurses-devel` in binary package managers)
 - watch out, you might need to add `EXTRAS="-ltinfo"` to the `make` commands on some distributions.
 
-Straightforward, as with pretty much every project with a makefile:
+The actual installation
+is traightforward, as with pretty much every project with a makefile:
 
 ```
 $ git clone https://github.com/Dangertech/vainglorious
@@ -67,3 +68,42 @@ $ cd vainglorious
 $ make
 # make install
 ```
+
+The resulting executable is called `vain` and should be accessible
+system-wide.
+
+### Troubleshooting
+
+#### Makefile fails at linking stage with "undefined reference to..."
+Your package manager does weird stuff and enjoys the pain
+and suffering of its users. The ncurses libraries are not fully
+included in the default flags given to the linking command.
+I only experience this issue on Gentoo, and it is fixable by
+passing `EXTRAS="-ltinfo"` to the make command.
+
+So the full command becomes:
+
+```
+$ make EXTRAS="-ltinfo"
+# make install
+```
+
+#### I can't find the vainglorious command after installing!
+The resulting executable after running the above commands is
+called `vain`, not `vainglorious`, so you don't have to type so much.
+
+```
+$ vain
+```
+
+#### "Error opening scroll! Please check file ownership!" when starting vain
+Your user does somehow not have the right permissions to view the scroll
+file that is the source of the scrolling text that is shown when using
+the program. This should be fixed in the newest version of the Makefile,
+but you can fix it yourself by running
+
+```
+chmod 644 /usr/share/vainglorious/default.scroll
+```
+
+(assuming you didn't change any of the compilation flags)

@@ -23,6 +23,7 @@ link: ${OBJ}
 install: ${BINNAME}
 	mkdir -p ${DEF_FILE_LOC}
 	cp data/default.scroll ${DEF_FILE}
+	chmod 644 ${DEF_FILE}
 	cp ${BINNAME} ${BINLOC}/
 
 clean:
